@@ -8,6 +8,7 @@ public class TukmaApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(TukmaApplication.class, args);
+
     }
 
 }
