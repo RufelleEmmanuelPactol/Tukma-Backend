@@ -59,4 +59,6 @@ public class JobController {
     public ResponseEntity<?> uploadResume(@PathVariable String accessKey) {
         return null;
     }
+
+
 }
