@@ -12,11 +12,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.tukma.auth.services.ModifiedUserServices;
 
 
 
 @Configuration
+@EnableWebSocket
 public class SecurityConfig {
 
 
@@ -32,15 +34,21 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable)
+        http
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> {
-                    auth.requestMatchers("api/v1/auth/user-status").authenticated();
-                   auth.requestMatchers("/api/v1/auth/**", "/api/v1/applicant/**", "/debug/**").permitAll();
-                           auth.requestMatchers("/api/v1/**").authenticated();
+                    auth.requestMatchers("/ws/**").permitAll();
+                    auth.requestMatchers("/api/v1/auth/**", "/api/v1/applicant/**", "/debug/**").permitAll();
+                    auth.requestMatchers("/api/v1/**").authenticated();
                 })
-
+                .headers(headers -> headers
+                        .frameOptions().disable()
+                        .cacheControl().disable()
+                )
+                .securityContext(context -> context.requireExplicitSave(false))  // Important for WebSocket
                 .logout(logout -> logout.logoutUrl("/api/v1/auth/logout"))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 

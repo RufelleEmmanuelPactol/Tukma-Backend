@@ -29,11 +29,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final List<String> EXCLUDED_PATHS = List.of(
             "/api/v1/auth/**",
             "/api/v1/applicant/**",
-            "/debug/**"
+            "/debug/**",
+            "/ws/**"
     );
     private final RequestContextFilter requestContextFilter;
 
     private boolean isExcludedPath(String requestPath) {
+        if (requestPath.startsWith("/ws")) {
+            return true;  // Completely bypass JWT filter for all WebSocket paths
+        }
         if (requestPath.equals("/api/v1/auth/user-status")) return false;
         return EXCLUDED_PATHS.stream().anyMatch(pattern -> pathMatcher.match(pattern, requestPath));
     }
@@ -50,6 +54,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         if (isExcludedPath(request.getRequestURI())) {
+            System.out.println("Excluded path: " + request.getRequestURI());
+            if (request.getRequestURI().equals("/ws/interview")) {
+                System.out.println("Ignoring jwt for ws");
+            }
             filterChain.doFilter(request, response);
             return;
         }

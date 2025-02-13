@@ -13,6 +13,7 @@ src/main/resources/application.properties
 .settings
 .springBeans
 .sts4-cache
+baeldung.p12
 
 ### IntelliJ IDEA ###
 .idea
