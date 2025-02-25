@@ -8,6 +8,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ProcessingStatusResponse {
-    private String hash;
-    private String status;
+    private String result;
 }
