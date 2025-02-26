@@ -101,7 +101,26 @@ Create a new job posting.
 ```
 
 **Response:**
-The created job object.
+```json
+{
+  "id": 1,
+  "owner": {
+    "id": 1,
+    "username": "recruiter@example.com",
+    "firstName": "Jane",
+    "lastName": "Recruiter",
+    "isRecruiter": true
+  },
+  "description": "We are looking for a software engineer...",
+  "title": "Software Engineer",
+  "accessKey": "abc-1234",
+  "type": "FULL_TIME",
+  "shiftType": "DAY_SHIFT",
+  "shiftLengthHours": 8,
+  "createdAt": "2025-02-26T10:00:00",
+  "updatedAt": "2025-02-26T10:00:00"
+}
+```
 
 #### Get All Jobs
 
@@ -112,7 +131,46 @@ GET /api/v1/jobs/get-jobs
 Get all jobs created by the authenticated user.
 
 **Response:**
-A list of job objects.
+```json
+[
+  {
+    "id": 1,
+    "owner": {
+      "id": 1,
+      "username": "recruiter@example.com",
+      "firstName": "Jane",
+      "lastName": "Recruiter",
+      "isRecruiter": true
+    },
+    "description": "We are looking for a software engineer...",
+    "title": "Software Engineer",
+    "accessKey": "abc-1234",
+    "type": "FULL_TIME",
+    "shiftType": "DAY_SHIFT",
+    "shiftLengthHours": 8,
+    "createdAt": "2025-02-26T10:00:00",
+    "updatedAt": "2025-02-26T10:00:00"
+  },
+  {
+    "id": 2,
+    "owner": {
+      "id": 1,
+      "username": "recruiter@example.com",
+      "firstName": "Jane",
+      "lastName": "Recruiter",
+      "isRecruiter": true
+    },
+    "description": "Looking for a product manager with 3+ years of experience...",
+    "title": "Product Manager",
+    "accessKey": "def-5678",
+    "type": "FULL_TIME",
+    "shiftType": "FLEXIBLE_SHIFT",
+    "shiftLengthHours": 8,
+    "createdAt": "2025-02-25T15:30:00",
+    "updatedAt": "2025-02-25T15:30:00"
+  }
+]
+```
 
 #### Get Job Details
 
@@ -123,10 +181,36 @@ GET /api/v1/jobs/get-job-details/{accessKey}
 Get detailed information about a specific job.
 
 **Parameters:**
-- `accessKey`: The unique identifier for the job
+- `accessKey`: The unique identifier for the job (e.g., "abc-1234")
 
-**Response:**
-The job object or 404 if not found.
+**Response (Success - 200 OK):**
+```json
+{
+  "id": 1,
+  "owner": {
+    "id": 1,
+    "username": "recruiter@example.com",
+    "firstName": "Jane",
+    "lastName": "Recruiter",
+    "isRecruiter": true
+  },
+  "description": "We are looking for a software engineer...",
+  "title": "Software Engineer",
+  "accessKey": "abc-1234",
+  "type": "FULL_TIME",
+  "shiftType": "DAY_SHIFT",
+  "shiftLengthHours": 8,
+  "createdAt": "2025-02-26T10:00:00",
+  "updatedAt": "2025-02-26T10:00:00"
+}
+```
+
+**Response (Not Found - 404):**
+```json
+{
+  "message": "Cannot find job with access key: invalid-key."
+}
+```
 
 #### Delete Job
 
@@ -137,10 +221,13 @@ DELETE /api/v1/jobs/delete-job/{accessKey}
 Delete a specific job.
 
 **Parameters:**
-- `accessKey`: The unique identifier for the job
+- `accessKey`: The unique identifier for the job (e.g., "abc-1234")
 
 **Response:**
-`204 No Content` if successful.
+- `204 No Content`: Job successfully deleted
+- `404 Not Found`: If the job with the specified access key doesn't exist
+- `403 Forbidden`: If the authenticated user doesn't own the job
+- `401 Unauthorized`: If the request is not authenticated
 
 #### Get Job Metadata
 
