@@ -11,6 +11,8 @@ import org.tukma.jobs.dtos.JobCreateRequest;
 import org.tukma.jobs.models.Job;
 import org.tukma.jobs.services.JobService;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -27,9 +29,8 @@ public class JobController {
 
     @PostMapping("/create-job")
     public ResponseEntity<Job> createJob(@RequestBody @Validated JobCreateRequest request) {
-        Job job = jobService.createJob((UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal(),
-                request.getTitle(),
-                request.getDescription());
+        UserEntity currentUser = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Job job = jobService.createJob(currentUser, request);
         return ResponseEntity.ok(job);
     }
 
@@ -58,6 +59,14 @@ public class JobController {
     @PostMapping("/upload-application/{accessKey}")
     public ResponseEntity<?> uploadResume(@PathVariable String accessKey) {
         return null;
+    }
+    
+    @GetMapping("/job-metadata")
+    public ResponseEntity<Map<String, Object>> getJobMetadata() {
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("jobTypes", Arrays.asList(Job.JobType.values()));
+        metadata.put("shiftTypes", Arrays.asList(Job.ShiftType.values()));
+        return ResponseEntity.ok(metadata);
     }
 
 
