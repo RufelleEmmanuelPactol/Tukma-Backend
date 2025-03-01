@@ -23,30 +23,30 @@ public class Job {
     @JoinColumn(name="owner_id", referencedColumnName = "id")
     private UserEntity owner;
 
-    @Column(nullable = false)
-    private String description;
+    @Column(name = "description", nullable = false)
+    private String description; // Maps to 'description' column, not 'job_description'
 
-    @Column(nullable = false)
-    private String title;
+    @Column(name = "title", nullable = false)
+    private String title; // Maps to 'title' column, not 'job_title'
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "access_key", nullable = false, unique = true)
     private String accessKey;
     
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "job_type", nullable = false)
     private JobType type = JobType.FULL_TIME;
     
     @Enumerated(EnumType.STRING)
-    @Column()
+    @Column(name = "shift_type")
     private ShiftType shiftType;
     
-    @Column()
+    @Column(name = "shift_length_hours")
     private Integer shiftLengthHours;
     
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     
     @PrePersist
