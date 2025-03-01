@@ -198,6 +198,14 @@
             <version>8.0.1.Final</version>
         </dependency>
         <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org</groupId>
             <artifactId>tukma</artifactId>
             <version>0.0.1-SNAPSHOT</version>
