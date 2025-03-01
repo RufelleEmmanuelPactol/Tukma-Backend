@@ -32,12 +32,24 @@ public class JobService {
         job.setAccessKey(jobAccessKeyGenerator());
 
         // Set the new fields
-        job.setType(request.getType());
+        job.setType(request.getType() != null ? request.getType() : Job.JobType.FULL_TIME);
         job.setShiftType(request.getShiftType());
         job.setShiftLengthHours(request.getShiftLengthHours());
 
-        jobRepository.save(job);
-        return job;
+        // Debug logging
+        System.out.println("Creating job with the following details:");
+        System.out.println("Title: " + job.getTitle());
+        System.out.println("Description: " + job.getDescription());
+        System.out.println("Type: " + job.getType());
+        System.out.println("ShiftType: " + job.getShiftType());
+        System.out.println("ShiftLengthHours: " + job.getShiftLengthHours());
+
+        Job savedJob = jobRepository.save(job);
+        
+        // Debug logging after save
+        System.out.println("Job saved with ID: " + savedJob.getId());
+        
+        return savedJob;
     }
 
     public Job getByAccessKey(String accessKey) {
