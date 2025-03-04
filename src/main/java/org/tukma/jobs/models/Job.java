@@ -29,6 +29,9 @@ public class Job {
     @Column(nullable = false)
     private String title;
 
+    @Column(nullable = false)
+    private String address;
+
     @Column(nullable = false, unique = true)
     private String accessKey;
     

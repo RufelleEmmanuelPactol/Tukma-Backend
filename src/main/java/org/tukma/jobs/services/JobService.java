@@ -29,6 +29,7 @@ public class JobService {
         job.setDescription(request.getDescription());
         job.setOwner(jobOwner);
         job.setTitle(request.getTitle());
+        job.setAddress(request.getAddress());
         job.setAccessKey(jobAccessKeyGenerator());
 
         // Set the new fields
