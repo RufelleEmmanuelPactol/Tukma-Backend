@@ -244,6 +244,62 @@ Delete a specific job.
 - `403 Forbidden`: If the authenticated user doesn't own the job
 - `401 Unauthorized`: If the request is not authenticated
 
+#### Edit Job
+
+```
+PUT /api/v1/jobs/edit-job/{accessKey}
+```
+
+Update an existing job posting.
+
+**Parameters:**
+- `accessKey`: The unique identifier for the job (e.g., "abc-1234")
+
+**Request Body:**
+```json
+{
+  "title": "Updated Software Engineer",
+  "description": "We are looking for an experienced software engineer...",
+  "address": "123 Main Street, San Francisco, CA 94105",
+  "type": "FULL_TIME",
+  "shiftType": "DAY_SHIFT",
+  "shiftLengthHours": 8,
+  "keywords": ["java", "spring", "api", "microservices", "cloud"]
+}
+```
+
+**Response (Success - 200 OK):**
+```json
+{
+  "job": {
+    "id": 1,
+    "owner": {
+      "id": 1,
+      "username": "recruiter@example.com",
+      "firstName": "Jane",
+      "lastName": "Recruiter",
+      "isRecruiter": true
+    },
+    "description": "We are looking for an experienced software engineer...",
+    "title": "Updated Software Engineer",
+    "address": "123 Main Street, San Francisco, CA 94105",
+    "accessKey": "abc-1234",
+    "type": "FULL_TIME",
+    "shiftType": "DAY_SHIFT",
+    "shiftLengthHours": 8,
+    "createdAt": "2025-02-26T10:00:00",
+    "updatedAt": "2025-03-04T15:30:00"
+  },
+  "keywords": ["java", "spring", "api", "microservices", "cloud"]
+}
+```
+
+**Response (Error):**
+- `404 Not Found`: If the job with the specified access key doesn't exist
+- `403 Forbidden`: If the authenticated user doesn't own the job
+- `400 Bad Request`: If the request body is invalid
+- `401 Unauthorized`: If the request is not authenticated
+
 #### Get Job Metadata
 
 ```

@@ -3,6 +3,7 @@ package org.tukma.jobs.services;
 import org.springframework.stereotype.Service;
 import org.tukma.auth.models.UserEntity;
 import org.tukma.jobs.dtos.JobCreateRequest;
+import org.tukma.jobs.dtos.JobEditRequest;
 import org.tukma.jobs.models.Job;
 import org.tukma.jobs.models.Keyword;
 import org.tukma.jobs.repositories.JobRepository;
@@ -167,5 +168,50 @@ public class JobService {
         jobMap.put("keywords", keywordStrings);
         
         return jobMap;
+    }
+    
+    /**
+     * Updates an existing job with new information
+     *
+     * @param job The job entity to update
+     * @param request The request containing updated job information
+     * @param currentUser The user requesting the update (for ownership verification)
+     * @return Updated job entity
+     * @throws IllegalArgumentException if user is not authorized to edit the job
+     */
+    public Job updateJob(Job job, JobEditRequest request, UserEntity currentUser) {
+        // Verify ownership
+        if (!job.getOwner().getId().equals(currentUser.getId())) {
+            throw new IllegalArgumentException("You are not authorized to edit this job.");
+        }
+        
+        // Update job details
+        job.setTitle(request.getTitle());
+        job.setDescription(request.getDescription());
+        job.setAddress(request.getAddress());
+        job.setType(request.getType());
+        job.setShiftType(request.getShiftType());
+        job.setShiftLengthHours(request.getShiftLengthHours());
+        
+        // Save updated job
+        jobRepository.save(job);
+        
+        // Handle keywords update if provided
+        if (request.getKeywords() != null) {
+            // Get existing keywords
+            List<Keyword> existingKeywords = keywordRepository.findByKeywordOwner(job);
+            
+            // Remove existing keywords
+            for (Keyword keyword : existingKeywords) {
+                keywordRepository.delete(keyword);
+            }
+            
+            // Add new keywords
+            if (!request.getKeywords().isEmpty()) {
+                addKeywordsToJob(request.getKeywords(), job);
+            }
+        }
+        
+        return job;
     }
 }

@@ -8,6 +8,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.tukma.auth.models.UserEntity;
 import org.tukma.jobs.dtos.JobCreateRequest;
+import org.tukma.jobs.dtos.JobEditRequest;
 import org.tukma.jobs.models.Job;
 import org.tukma.jobs.services.JobService;
 
@@ -75,6 +76,35 @@ public class JobController {
         metadata.put("jobTypes", Arrays.asList(Job.JobType.values()));
         metadata.put("shiftTypes", Arrays.asList(Job.ShiftType.values()));
         return ResponseEntity.ok(metadata);
+    }
+    
+    /**
+     * Endpoint to edit an existing job
+     *
+     * @param accessKey Unique identifier for the job
+     * @param request JobEditRequest containing updated information
+     * @return Updated job with keywords
+     */
+    @PutMapping("/edit-job/{accessKey}")
+    public ResponseEntity<?> editJob(@PathVariable String accessKey, @RequestBody @Validated JobEditRequest request) {
+        UserEntity currentUser = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Job job = jobService.getByAccessKey(accessKey);
+        
+        if (job == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    Map.of("message", "Cannot find job with access key: " + accessKey + "."));
+        }
+        
+        try {
+            Job updatedJob = jobService.updateJob(job, request, currentUser);
+            return ResponseEntity.ok(jobService.getJobWithKeywords(updatedJob));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                    Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    Map.of("message", "An error occurred while updating the job: " + e.getMessage()));
+        }
     }
 
 
