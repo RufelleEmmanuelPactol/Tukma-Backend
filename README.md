@@ -138,13 +138,15 @@ Create a new job posting.
 }
 ```
 
-#### Get All Jobs
+#### Get All Jobs (Deprecated)
 
 ```
 GET /api/v1/jobs/get-jobs
 ```
 
 Get all jobs created by the authenticated user, including associated keywords.
+
+**Note:** This endpoint is deprecated. Please use the paginated endpoint (`/api/v1/jobs/get-jobs-owner`) instead.
 
 **Response:**
 ```json
@@ -194,6 +196,82 @@ Get all jobs created by the authenticated user, including associated keywords.
     "keywords": ["product management", "agile", "leadership"]
   }
 ]
+```
+
+#### Get Paginated Jobs
+
+```
+GET /api/v1/jobs/get-jobs-owner
+```
+
+Get paginated jobs created by the authenticated user, sorted by most recently updated first.
+
+**Parameters:**
+- `page` (optional): The page number (0-based, defaults to 0)
+- `size` (optional): The number of items per page (defaults to 10)
+
+**Request Example:**
+```
+GET /api/v1/jobs/get-jobs-owner?page=0&size=5
+```
+
+**Response:**
+```json
+{
+  "jobs": [
+    {
+      "job": {
+        "id": 1,
+        "owner": {
+          "id": 1,
+          "username": "recruiter@example.com",
+          "firstName": "Jane",
+          "lastName": "Recruiter",
+          "isRecruiter": true
+        },
+        "description": "We are looking for a software engineer...",
+        "title": "Software Engineer",
+        "address": "123 Main Street, San Francisco, CA 94105",
+        "accessKey": "abc-1234",
+        "type": "FULL_TIME",
+        "shiftType": "DAY_SHIFT",
+        "shiftLengthHours": 8,
+        "createdAt": "2025-02-26T10:00:00",
+        "updatedAt": "2025-03-04T15:30:00"
+      },
+      "keywords": ["java", "spring", "api", "microservices"]
+    },
+    {
+      "job": {
+        "id": 2,
+        "owner": {
+          "id": 1,
+          "username": "recruiter@example.com",
+          "firstName": "Jane",
+          "lastName": "Recruiter",
+          "isRecruiter": true
+        },
+        "description": "Looking for a product manager with 3+ years of experience...",
+        "title": "Product Manager",
+        "address": "456 Market Street, San Francisco, CA 94105",
+        "accessKey": "def-5678",
+        "type": "FULL_TIME",
+        "shiftType": "FLEXIBLE_SHIFT",
+        "shiftLengthHours": 8,
+        "createdAt": "2025-02-25T15:30:00",
+        "updatedAt": "2025-02-25T15:30:00"
+      },
+      "keywords": ["product management", "agile", "leadership"]
+    }
+  ],
+  "pagination": {
+    "page": 0,
+    "size": 5,
+    "totalElements": 8,
+    "totalPages": 2,
+    "hasNextPage": true
+  }
+}
 ```
 
 #### Get Job Details
