@@ -97,7 +97,8 @@ Create a new job posting.
   "address": "123 Main Street, San Francisco, CA 94105",
   "type": "FULL_TIME",
   "shiftType": "DAY_SHIFT",
-  "shiftLengthHours": 8
+  "shiftLengthHours": 8,
+  "keywords": ["java", "spring", "api", "microservices"]
 }
 ```
 
@@ -130,12 +131,73 @@ Create a new job posting.
 GET /api/v1/jobs/get-jobs
 ```
 
-Get all jobs created by the authenticated user.
+Get all jobs created by the authenticated user, including associated keywords.
 
 **Response:**
 ```json
 [
   {
+    "job": {
+      "id": 1,
+      "owner": {
+        "id": 1,
+        "username": "recruiter@example.com",
+        "firstName": "Jane",
+        "lastName": "Recruiter",
+        "isRecruiter": true
+      },
+      "description": "We are looking for a software engineer...",
+      "title": "Software Engineer",
+      "address": "123 Main Street, San Francisco, CA 94105",
+      "accessKey": "abc-1234",
+      "type": "FULL_TIME",
+      "shiftType": "DAY_SHIFT",
+      "shiftLengthHours": 8,
+      "createdAt": "2025-02-26T10:00:00",
+      "updatedAt": "2025-02-26T10:00:00"
+    },
+    "keywords": ["java", "spring", "api", "microservices"]
+  },
+  {
+    "job": {
+      "id": 2,
+      "owner": {
+        "id": 1,
+        "username": "recruiter@example.com",
+        "firstName": "Jane",
+        "lastName": "Recruiter",
+        "isRecruiter": true
+      },
+      "description": "Looking for a product manager with 3+ years of experience...",
+      "title": "Product Manager",
+      "address": "456 Market Street, San Francisco, CA 94105",
+      "accessKey": "def-5678",
+      "type": "FULL_TIME",
+      "shiftType": "FLEXIBLE_SHIFT",
+      "shiftLengthHours": 8,
+      "createdAt": "2025-02-25T15:30:00",
+      "updatedAt": "2025-02-25T15:30:00"
+    },
+    "keywords": ["product management", "agile", "leadership"]
+  }
+]
+```
+
+#### Get Job Details
+
+```
+GET /api/v1/jobs/get-job-details/{accessKey}
+```
+
+Get detailed information about a specific job, including associated keywords.
+
+**Parameters:**
+- `accessKey`: The unique identifier for the job (e.g., "abc-1234")
+
+**Response (Success - 200 OK):**
+```json
+{
+  "job": {
     "id": 1,
     "owner": {
       "id": 1,
@@ -154,59 +216,7 @@ Get all jobs created by the authenticated user.
     "createdAt": "2025-02-26T10:00:00",
     "updatedAt": "2025-02-26T10:00:00"
   },
-  {
-    "id": 2,
-    "owner": {
-      "id": 1,
-      "username": "recruiter@example.com",
-      "firstName": "Jane",
-      "lastName": "Recruiter",
-      "isRecruiter": true
-    },
-    "description": "Looking for a product manager with 3+ years of experience...",
-    "title": "Product Manager",
-    "address": "456 Market Street, San Francisco, CA 94105",
-    "accessKey": "def-5678",
-    "type": "FULL_TIME",
-    "shiftType": "FLEXIBLE_SHIFT",
-    "shiftLengthHours": 8,
-    "createdAt": "2025-02-25T15:30:00",
-    "updatedAt": "2025-02-25T15:30:00"
-  }
-]
-```
-
-#### Get Job Details
-
-```
-GET /api/v1/jobs/get-job-details/{accessKey}
-```
-
-Get detailed information about a specific job.
-
-**Parameters:**
-- `accessKey`: The unique identifier for the job (e.g., "abc-1234")
-
-**Response (Success - 200 OK):**
-```json
-{
-  "id": 1,
-  "owner": {
-    "id": 1,
-    "username": "recruiter@example.com",
-    "firstName": "Jane",
-    "lastName": "Recruiter",
-    "isRecruiter": true
-  },
-  "description": "We are looking for a software engineer...",
-  "title": "Software Engineer",
-  "address": "123 Main Street, San Francisco, CA 94105",
-  "accessKey": "abc-1234",
-  "type": "FULL_TIME",
-  "shiftType": "DAY_SHIFT",
-  "shiftLengthHours": 8,
-  "createdAt": "2025-02-26T10:00:00",
-  "updatedAt": "2025-02-26T10:00:00"
+  "keywords": ["java", "spring", "api", "microservices"]
 }
 ```
 
