@@ -19,6 +19,9 @@ public class JobCreateRequest {
     @NotBlank
     private String description;
     
+    @NotBlank(message = "Job address is required")
+    private String address;
+    
     @NotNull(message = "Job type is required")
     private JobType type = JobType.FULL_TIME;
     
