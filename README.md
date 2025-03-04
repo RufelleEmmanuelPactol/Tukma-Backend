@@ -16,14 +16,26 @@ POST /api/v1/auth/signup
 
 Creates a new user account.
 
-**Request Body:**
+**Request Body (for Applicants):**
 ```json
 {
-  "email": "user@example.com",
+  "email": "applicant@example.com",
   "password": "password123",
   "firstName": "John",
   "lastName": "Doe",
   "isApplicant": true
+}
+```
+
+**Request Body (for Recruiters):**
+```json
+{
+  "email": "recruiter@example.com",
+  "password": "password123",
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "isApplicant": false,
+  "companyName": "Acme Inc."
 }
 ```
 
@@ -74,7 +86,8 @@ Get the current authenticated user's details.
     "username": "user@example.com",
     "firstName": "John",
     "lastName": "Doe",
-    "isRecruiter": false
+    "isRecruiter": false,
+    "companyName": "Acme Inc." // Only present for recruiter accounts
   }
 }
 ```
@@ -204,7 +217,8 @@ Get detailed information about a specific job, including associated keywords.
       "username": "recruiter@example.com",
       "firstName": "Jane",
       "lastName": "Recruiter",
-      "isRecruiter": true
+      "isRecruiter": true,
+      "companyName": "Acme Inc."
     },
     "description": "We are looking for a software engineer...",
     "title": "Software Engineer",
@@ -439,3 +453,7 @@ Message types:
 - `NIGHT_SHIFT`: Overnight working hours
 - `ROTATING_SHIFT`: Schedule that changes regularly
 - `FLEXIBLE_SHIFT`: Flexible working hours
+
+### User Types
+- `Applicant (isApplicant=true)`: A job seeker who can upload resumes and apply to jobs
+- `Recruiter (isApplicant=false)`: A user who can create and manage job postings
