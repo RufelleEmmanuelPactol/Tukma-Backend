@@ -35,13 +35,19 @@ public class ModifiedUserServices implements org.springframework.security.core.u
         return userRepository.findByUsername(email).isPresent();
     }
 
-    public UserEntity createUser(String email, String password, String firstName, String lastName, boolean isApplicant) {
+    public UserEntity createUser(String email, String password, String firstName, String lastName, boolean isApplicant, String companyName) {
         UserEntity user = new UserEntity();
         user.setUsername(email);
         user.setPassword(hashPassword(password));
         user.setFirstName(firstName);
         user.setLastName(lastName);
         user.setRecruiter(!isApplicant);
+        
+        // Only set company name if user is a recruiter (isApplicant is false)
+        if (!isApplicant) {
+            user.setCompanyName(companyName);
+        }
+        
         return userRepository.save(user);
 
     }

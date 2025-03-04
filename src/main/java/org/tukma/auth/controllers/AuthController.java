@@ -60,7 +60,7 @@ public class AuthController {
                     .body("user already exists");
         }
 
-        var returnVal = userService.createUser(signUp.getEmail(), signUp.getPassword(), signUp.getFirstName(), signUp.getLastName(), signUp.isApplicant());
+        var returnVal = userService.createUser(signUp.getEmail(), signUp.getPassword(), signUp.getFirstName(), signUp.getLastName(), signUp.isApplicant(), signUp.getCompanyName());
         if (returnVal != null) return ResponseEntity.ok().build();
         else return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Cannot determine error in auth.");
 
