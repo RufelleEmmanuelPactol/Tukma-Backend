@@ -16,14 +16,26 @@ POST /api/v1/auth/signup
 
 Creates a new user account.
 
-**Request Body:**
+**Request Body (for Applicants):**
 ```json
 {
-  "email": "user@example.com",
+  "email": "applicant@example.com",
   "password": "password123",
   "firstName": "John",
   "lastName": "Doe",
   "isApplicant": true
+}
+```
+
+**Request Body (for Recruiters):**
+```json
+{
+  "email": "recruiter@example.com",
+  "password": "password123",
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "isApplicant": false,
+  "companyName": "Acme Inc."
 }
 ```
 
@@ -74,7 +86,8 @@ Get the current authenticated user's details.
     "username": "user@example.com",
     "firstName": "John",
     "lastName": "Doe",
-    "isRecruiter": false
+    "isRecruiter": false,
+    "companyName": "Acme Inc." // Only present for recruiter accounts
   }
 }
 ```
@@ -97,7 +110,8 @@ Create a new job posting.
   "address": "123 Main Street, San Francisco, CA 94105",
   "type": "FULL_TIME",
   "shiftType": "DAY_SHIFT",
-  "shiftLengthHours": 8
+  "shiftLengthHours": 8,
+  "keywords": ["java", "spring", "api", "microservices"]
 }
 ```
 
@@ -124,25 +138,165 @@ Create a new job posting.
 }
 ```
 
-#### Get All Jobs
+#### Get All Jobs (Deprecated)
 
 ```
 GET /api/v1/jobs/get-jobs
 ```
 
-Get all jobs created by the authenticated user.
+Get all jobs created by the authenticated user, including associated keywords.
+
+**Note:** This endpoint is deprecated. Please use the paginated endpoint (`/api/v1/jobs/get-jobs-owner`) instead.
 
 **Response:**
 ```json
 [
   {
+    "job": {
+      "id": 1,
+      "owner": {
+        "id": 1,
+        "username": "recruiter@example.com",
+        "firstName": "Jane",
+        "lastName": "Recruiter",
+        "isRecruiter": true
+      },
+      "description": "We are looking for a software engineer...",
+      "title": "Software Engineer",
+      "address": "123 Main Street, San Francisco, CA 94105",
+      "accessKey": "abc-1234",
+      "type": "FULL_TIME",
+      "shiftType": "DAY_SHIFT",
+      "shiftLengthHours": 8,
+      "createdAt": "2025-02-26T10:00:00",
+      "updatedAt": "2025-02-26T10:00:00"
+    },
+    "keywords": ["java", "spring", "api", "microservices"]
+  },
+  {
+    "job": {
+      "id": 2,
+      "owner": {
+        "id": 1,
+        "username": "recruiter@example.com",
+        "firstName": "Jane",
+        "lastName": "Recruiter",
+        "isRecruiter": true
+      },
+      "description": "Looking for a product manager with 3+ years of experience...",
+      "title": "Product Manager",
+      "address": "456 Market Street, San Francisco, CA 94105",
+      "accessKey": "def-5678",
+      "type": "FULL_TIME",
+      "shiftType": "FLEXIBLE_SHIFT",
+      "shiftLengthHours": 8,
+      "createdAt": "2025-02-25T15:30:00",
+      "updatedAt": "2025-02-25T15:30:00"
+    },
+    "keywords": ["product management", "agile", "leadership"]
+  }
+]
+```
+
+#### Get Paginated Jobs
+
+```
+GET /api/v1/jobs/get-jobs-owner
+```
+
+Get paginated jobs created by the authenticated user, sorted by most recently updated first.
+
+**Parameters:**
+- `page` (optional): The page number (0-based, defaults to 0)
+- `size` (optional): The number of items per page (defaults to 10)
+
+**Request Example:**
+```
+GET /api/v1/jobs/get-jobs-owner?page=0&size=5
+```
+
+**Response:**
+```json
+{
+  "jobs": [
+    {
+      "job": {
+        "id": 1,
+        "owner": {
+          "id": 1,
+          "username": "recruiter@example.com",
+          "firstName": "Jane",
+          "lastName": "Recruiter",
+          "isRecruiter": true
+        },
+        "description": "We are looking for a software engineer...",
+        "title": "Software Engineer",
+        "address": "123 Main Street, San Francisco, CA 94105",
+        "accessKey": "abc-1234",
+        "type": "FULL_TIME",
+        "shiftType": "DAY_SHIFT",
+        "shiftLengthHours": 8,
+        "createdAt": "2025-02-26T10:00:00",
+        "updatedAt": "2025-03-04T15:30:00"
+      },
+      "keywords": ["java", "spring", "api", "microservices"]
+    },
+    {
+      "job": {
+        "id": 2,
+        "owner": {
+          "id": 1,
+          "username": "recruiter@example.com",
+          "firstName": "Jane",
+          "lastName": "Recruiter",
+          "isRecruiter": true
+        },
+        "description": "Looking for a product manager with 3+ years of experience...",
+        "title": "Product Manager",
+        "address": "456 Market Street, San Francisco, CA 94105",
+        "accessKey": "def-5678",
+        "type": "FULL_TIME",
+        "shiftType": "FLEXIBLE_SHIFT",
+        "shiftLengthHours": 8,
+        "createdAt": "2025-02-25T15:30:00",
+        "updatedAt": "2025-02-25T15:30:00"
+      },
+      "keywords": ["product management", "agile", "leadership"]
+    }
+  ],
+  "pagination": {
+    "page": 0,
+    "size": 5,
+    "totalElements": 8,
+    "totalPages": 2,
+    "hasNextPage": true
+  }
+}
+```
+
+#### Get Job Details
+
+```
+GET /api/v1/jobs/get-job-details/{accessKey}
+```
+
+Get detailed information about a specific job, including associated keywords.
+
+**Parameters:**
+- `accessKey`: The unique identifier for the job (e.g., "abc-1234")
+
+**Response (Success - 200 OK):**
+```json
+{
+  "job": {
     "id": 1,
     "owner": {
       "id": 1,
       "username": "recruiter@example.com",
       "firstName": "Jane",
       "lastName": "Recruiter",
-      "isRecruiter": true
+      "isRecruiter": true,
+      "companyName": "Acme Inc."
     },
     "description": "We are looking for a software engineer...",
     "title": "Software Engineer",
@@ -154,59 +308,7 @@ Get all jobs created by the authenticated user.
     "createdAt": "2025-02-26T10:00:00",
     "updatedAt": "2025-02-26T10:00:00"
   },
-  {
-    "id": 2,
-    "owner": {
-      "id": 1,
-      "username": "recruiter@example.com",
-      "firstName": "Jane",
-      "lastName": "Recruiter",
-      "isRecruiter": true
-    },
-    "description": "Looking for a product manager with 3+ years of experience...",
-    "title": "Product Manager",
-    "address": "456 Market Street, San Francisco, CA 94105",
-    "accessKey": "def-5678",
-    "type": "FULL_TIME",
-    "shiftType": "FLEXIBLE_SHIFT",
-    "shiftLengthHours": 8,
-    "createdAt": "2025-02-25T15:30:00",
-    "updatedAt": "2025-02-25T15:30:00"
-  }
-]
-```
-
-#### Get Job Details
-
-```
-GET /api/v1/jobs/get-job-details/{accessKey}
-```
-
-Get detailed information about a specific job.
-
-**Parameters:**
-- `accessKey`: The unique identifier for the job (e.g., "abc-1234")
-
-**Response (Success - 200 OK):**
-```json
-{
-  "id": 1,
-  "owner": {
-    "id": 1,
-    "username": "recruiter@example.com",
-    "firstName": "Jane",
-    "lastName": "Recruiter",
-    "isRecruiter": true
-  },
-  "description": "We are looking for a software engineer...",
-  "title": "Software Engineer",
-  "address": "123 Main Street, San Francisco, CA 94105",
-  "accessKey": "abc-1234",
-  "type": "FULL_TIME",
-  "shiftType": "DAY_SHIFT",
-  "shiftLengthHours": 8,
-  "createdAt": "2025-02-26T10:00:00",
-  "updatedAt": "2025-02-26T10:00:00"
+  "keywords": ["java", "spring", "api", "microservices"]
 }
 ```
 
@@ -232,6 +334,62 @@ Delete a specific job.
 - `204 No Content`: Job successfully deleted
 - `404 Not Found`: If the job with the specified access key doesn't exist
 - `403 Forbidden`: If the authenticated user doesn't own the job
+- `401 Unauthorized`: If the request is not authenticated
+
+#### Edit Job
+
+```
+PUT /api/v1/jobs/edit-job/{accessKey}
+```
+
+Update an existing job posting.
+
+**Parameters:**
+- `accessKey`: The unique identifier for the job (e.g., "abc-1234")
+
+**Request Body:**
+```json
+{
+  "title": "Updated Software Engineer",
+  "description": "We are looking for an experienced software engineer...",
+  "address": "123 Main Street, San Francisco, CA 94105",
+  "type": "FULL_TIME",
+  "shiftType": "DAY_SHIFT",
+  "shiftLengthHours": 8,
+  "keywords": ["java", "spring", "api", "microservices", "cloud"]
+}
+```
+
+**Response (Success - 200 OK):**
+```json
+{
+  "job": {
+    "id": 1,
+    "owner": {
+      "id": 1,
+      "username": "recruiter@example.com",
+      "firstName": "Jane",
+      "lastName": "Recruiter",
+      "isRecruiter": true
+    },
+    "description": "We are looking for an experienced software engineer...",
+    "title": "Updated Software Engineer",
+    "address": "123 Main Street, San Francisco, CA 94105",
+    "accessKey": "abc-1234",
+    "type": "FULL_TIME",
+    "shiftType": "DAY_SHIFT",
+    "shiftLengthHours": 8,
+    "createdAt": "2025-02-26T10:00:00",
+    "updatedAt": "2025-03-04T15:30:00"
+  },
+  "keywords": ["java", "spring", "api", "microservices", "cloud"]
+}
+```
+
+**Response (Error):**
+- `404 Not Found`: If the job with the specified access key doesn't exist
+- `403 Forbidden`: If the authenticated user doesn't own the job
+- `400 Bad Request`: If the request body is invalid
 - `401 Unauthorized`: If the request is not authenticated
 
 #### Get Job Metadata
@@ -373,3 +531,7 @@ Message types:
 - `NIGHT_SHIFT`: Overnight working hours
 - `ROTATING_SHIFT`: Schedule that changes regularly
 - `FLEXIBLE_SHIFT`: Flexible working hours
+
+### User Types
+- `Applicant (isApplicant=true)`: A job seeker who can upload resumes and apply to jobs
+- `Recruiter (isApplicant=false)`: A user who can create and manage job postings

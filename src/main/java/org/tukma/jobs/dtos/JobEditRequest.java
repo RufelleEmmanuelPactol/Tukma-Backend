@@ -1,6 +1,5 @@
 package org.tukma.jobs.dtos;
 
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -13,8 +12,7 @@ import java.util.List;
 
 @Getter
 @Setter
-public class JobCreateRequest {
-
+public class JobEditRequest {
     @NotBlank
     private String title;
 
@@ -25,12 +23,16 @@ public class JobCreateRequest {
     private String address;
     
     @NotNull(message = "Job type is required")
-    private JobType type = JobType.FULL_TIME;
+    private JobType type;
     
     private ShiftType shiftType;
     
     @Positive(message = "If provided, shift length must be positive")
     private Integer shiftLengthHours;
     
+    /**
+     * List of keywords to associate with the job.
+     * The existing keywords will be replaced with this new list.
+     */
     private List<String> keywords;
 }

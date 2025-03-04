@@ -1,15 +1,24 @@
 package org.tukma.jobs.services;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.tukma.auth.models.UserEntity;
 import org.tukma.jobs.dtos.JobCreateRequest;
+import org.tukma.jobs.dtos.JobEditRequest;
+import org.tukma.jobs.dtos.PagedJobsResponse;
 import org.tukma.jobs.models.Job;
 import org.tukma.jobs.models.Keyword;
 import org.tukma.jobs.repositories.JobRepository;
 import org.tukma.jobs.repositories.KeywordRepository;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 @Service
@@ -37,7 +46,14 @@ public class JobService {
         job.setShiftType(request.getShiftType());
         job.setShiftLengthHours(request.getShiftLengthHours());
 
+        // Save the job to generate an ID before adding keywords
         jobRepository.save(job);
+        
+        // Add keywords if provided
+        if(request.getKeywords() != null && !request.getKeywords().isEmpty()) {
+            addKeywordsToJob(request.getKeywords(), job);
+        }
+        
         return job;
     }
 
@@ -123,5 +139,119 @@ public class JobService {
 
     public List<Job> getJobByOwner(UserEntity entity) {
         return jobRepository.findByOwner_Id(entity.getId());
+    }
+
+    /**
+     * Get all jobs with their associated keywords for a specific user
+     *
+     * @param user The user entity whose jobs should be fetched
+     * @return List of maps containing job and its keywords
+     */
+    public List<Map<String, Object>> getJobsWithKeywords(UserEntity user) {
+        List<Job> jobs = getJobByOwner(user);
+        List<Map<String, Object>> jobsWithKeywords = new ArrayList<>();
+        
+        for (Job job : jobs) {
+            jobsWithKeywords.add(getJobWithKeywords(job));
+        }
+        
+        return jobsWithKeywords;
+    }
+    
+    /**
+     * Get paginated jobs with their associated keywords for a specific user, sorted by updatedAt in descending order
+     *
+     * @param user The user entity whose jobs should be fetched
+     * @param page The page number (0-based)
+     * @param size The page size
+     * @return PagedJobsResponse containing jobs with keywords and pagination metadata
+     */
+    public PagedJobsResponse getPagedJobsWithKeywords(UserEntity user, int page, int size) {
+        // Create pageable with sorting by updatedAt in descending order
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        
+        // Fetch page of jobs
+        Page<Job> jobsPage = jobRepository.findByOwner_Id(user.getId(), pageable);
+        
+        // Convert jobs to job+keywords map
+        List<Map<String, Object>> jobsWithKeywords = new ArrayList<>();
+        for (Job job : jobsPage.getContent()) {
+            jobsWithKeywords.add(getJobWithKeywords(job));
+        }
+        
+        // Create pagination metadata
+        boolean hasNextPage = jobsPage.getNumber() < jobsPage.getTotalPages() - 1;
+        PagedJobsResponse.PaginationMetadata metadata = new PagedJobsResponse.PaginationMetadata(
+                jobsPage.getNumber(),
+                jobsPage.getSize(),
+                jobsPage.getTotalElements(),
+                jobsPage.getTotalPages(),
+                hasNextPage
+        );
+        
+        // Create and return response
+        return new PagedJobsResponse(jobsWithKeywords, metadata);
+    }
+    
+    /**
+     * Get a single job with its associated keywords
+     *
+     * @param job The job entity
+     * @return Map containing job and its keywords
+     */
+    public Map<String, Object> getJobWithKeywords(Job job) {
+        Map<String, Object> jobMap = new HashMap<>();
+        jobMap.put("job", job);
+        
+        List<Keyword> keywords = keywordRepository.findByKeywordOwner(job);
+        List<String> keywordStrings = keywords.stream().map(Keyword::getKeywordName).toList();
+        jobMap.put("keywords", keywordStrings);
+        
+        return jobMap;
+    }
+    
+    /**
+     * Updates an existing job with new information
+     *
+     * @param job The job entity to update
+     * @param request The request containing updated job information
+     * @param currentUser The user requesting the update (for ownership verification)
+     * @return Updated job entity
+     * @throws IllegalArgumentException if user is not authorized to edit the job
+     */
+    public Job updateJob(Job job, JobEditRequest request, UserEntity currentUser) {
+        // Verify ownership
+        if (!job.getOwner().getId().equals(currentUser.getId())) {
+            throw new IllegalArgumentException("You are not authorized to edit this job.");
+        }
+        
+        // Update job details
+        job.setTitle(request.getTitle());
+        job.setDescription(request.getDescription());
+        job.setAddress(request.getAddress());
+        job.setType(request.getType());
+        job.setShiftType(request.getShiftType());
+        job.setShiftLengthHours(request.getShiftLengthHours());
+        
+        // Save updated job
+        jobRepository.save(job);
+        
+        // Handle keywords update if provided
+        if (request.getKeywords() != null) {
+            // Get existing keywords
+            List<Keyword> existingKeywords = keywordRepository.findByKeywordOwner(job);
+            
+            // Remove existing keywords
+            for (Keyword keyword : existingKeywords) {
+                keywordRepository.delete(keyword);
+            }
+            
+            // Add new keywords
+            if (!request.getKeywords().isEmpty()) {
+                addKeywordsToJob(request.getKeywords(), job);
+            }
+        }
+        
+        return job;
     }
 }

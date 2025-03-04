@@ -2,6 +2,8 @@ package org.tukma.auth.dtos;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
 
 public class SignUpDto {
     public String getEmail() {
@@ -57,5 +59,9 @@ public class SignUpDto {
 
 
     private boolean isApplicant;
+
+    @Setter
+    @Getter
+    private String companyName;
 
 }

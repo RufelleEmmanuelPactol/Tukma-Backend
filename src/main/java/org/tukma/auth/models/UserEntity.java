@@ -30,6 +30,9 @@ public class UserEntity implements UserDetails {
     private String firstName;
     public String lastName;
 
+    @Column(nullable = true)
+    private String companyName;
+
     @JsonIgnore
     private String password;
 
