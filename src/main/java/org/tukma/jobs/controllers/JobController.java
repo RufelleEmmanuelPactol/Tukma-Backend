@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.tukma.auth.models.UserEntity;
 import org.tukma.jobs.dtos.JobCreateRequest;
 import org.tukma.jobs.dtos.JobEditRequest;
+import org.tukma.jobs.dtos.PagedJobsResponse;
 import org.tukma.jobs.models.Job;
 import org.tukma.jobs.services.JobService;
 
@@ -40,11 +41,30 @@ public class JobController {
         return ResponseEntity.ok(job);
     }
 
+    /**
+     * Get all jobs (deprecated - use the paginated endpoint instead)
+     */
     @GetMapping("/get-jobs")
     public ResponseEntity<List<Map<String, Object>>> getAllJobs() {
         UserEntity currentUser = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         List<Map<String, Object>> jobsWithKeywords = jobService.getJobsWithKeywords(currentUser);
         return ResponseEntity.ok(jobsWithKeywords);
+    }
+    
+    /**
+     * Get paginated jobs, sorted by updatedAt in descending order (most recent first)
+     * 
+     * @param page The page number (0-based, defaults to 0)
+     * @param size The page size (defaults to 10)
+     * @return Paginated response containing jobs and pagination metadata
+     */
+    @GetMapping("/get-jobs-owner")
+    public ResponseEntity<PagedJobsResponse> getPaginatedJobs(
+            @RequestParam(defaultValue = "0") int page, 
+            @RequestParam(defaultValue = "10") int size) {
+        UserEntity currentUser = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        PagedJobsResponse pagedResponse = jobService.getPagedJobsWithKeywords(currentUser, page, size);
+        return ResponseEntity.ok(pagedResponse);
     }
 
     @DeleteMapping("/delete-job/{accessKey}")

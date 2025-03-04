@@ -1,9 +1,14 @@
 package org.tukma.jobs.services;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.tukma.auth.models.UserEntity;
 import org.tukma.jobs.dtos.JobCreateRequest;
 import org.tukma.jobs.dtos.JobEditRequest;
+import org.tukma.jobs.dtos.PagedJobsResponse;
 import org.tukma.jobs.models.Job;
 import org.tukma.jobs.models.Keyword;
 import org.tukma.jobs.repositories.JobRepository;
@@ -151,6 +156,41 @@ public class JobService {
         }
         
         return jobsWithKeywords;
+    }
+    
+    /**
+     * Get paginated jobs with their associated keywords for a specific user, sorted by updatedAt in descending order
+     *
+     * @param user The user entity whose jobs should be fetched
+     * @param page The page number (0-based)
+     * @param size The page size
+     * @return PagedJobsResponse containing jobs with keywords and pagination metadata
+     */
+    public PagedJobsResponse getPagedJobsWithKeywords(UserEntity user, int page, int size) {
+        // Create pageable with sorting by updatedAt in descending order
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        
+        // Fetch page of jobs
+        Page<Job> jobsPage = jobRepository.findByOwner_Id(user.getId(), pageable);
+        
+        // Convert jobs to job+keywords map
+        List<Map<String, Object>> jobsWithKeywords = new ArrayList<>();
+        for (Job job : jobsPage.getContent()) {
+            jobsWithKeywords.add(getJobWithKeywords(job));
+        }
+        
+        // Create pagination metadata
+        boolean hasNextPage = jobsPage.getNumber() < jobsPage.getTotalPages() - 1;
+        PagedJobsResponse.PaginationMetadata metadata = new PagedJobsResponse.PaginationMetadata(
+                jobsPage.getNumber(),
+                jobsPage.getSize(),
+                jobsPage.getTotalElements(),
+                jobsPage.getTotalPages(),
+                hasNextPage
+        );
+        
+        // Create and return response
+        return new PagedJobsResponse(jobsWithKeywords, metadata);
     }
     
     /**
