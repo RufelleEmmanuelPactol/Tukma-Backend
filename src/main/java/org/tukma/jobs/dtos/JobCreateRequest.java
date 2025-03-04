@@ -9,6 +9,8 @@ import lombok.Setter;
 import org.tukma.jobs.models.Job.JobType;
 import org.tukma.jobs.models.Job.ShiftType;
 
+import java.util.List;
+
 @Getter
 @Setter
 public class JobCreateRequest {
@@ -29,4 +31,6 @@ public class JobCreateRequest {
     
     @Positive(message = "If provided, shift length must be positive")
     private Integer shiftLengthHours;
+    
+    private List<String> keywords;
 }

@@ -8,8 +8,11 @@ import org.tukma.jobs.models.Keyword;
 import org.tukma.jobs.repositories.JobRepository;
 import org.tukma.jobs.repositories.KeywordRepository;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 @Service
@@ -37,7 +40,14 @@ public class JobService {
         job.setShiftType(request.getShiftType());
         job.setShiftLengthHours(request.getShiftLengthHours());
 
+        // Save the job to generate an ID before adding keywords
         jobRepository.save(job);
+        
+        // Add keywords if provided
+        if(request.getKeywords() != null && !request.getKeywords().isEmpty()) {
+            addKeywordsToJob(request.getKeywords(), job);
+        }
+        
         return job;
     }
 
@@ -123,5 +133,39 @@ public class JobService {
 
     public List<Job> getJobByOwner(UserEntity entity) {
         return jobRepository.findByOwner_Id(entity.getId());
+    }
+
+    /**
+     * Get all jobs with their associated keywords for a specific user
+     *
+     * @param user The user entity whose jobs should be fetched
+     * @return List of maps containing job and its keywords
+     */
+    public List<Map<String, Object>> getJobsWithKeywords(UserEntity user) {
+        List<Job> jobs = getJobByOwner(user);
+        List<Map<String, Object>> jobsWithKeywords = new ArrayList<>();
+        
+        for (Job job : jobs) {
+            jobsWithKeywords.add(getJobWithKeywords(job));
+        }
+        
+        return jobsWithKeywords;
+    }
+    
+    /**
+     * Get a single job with its associated keywords
+     *
+     * @param job The job entity
+     * @return Map containing job and its keywords
+     */
+    public Map<String, Object> getJobWithKeywords(Job job) {
+        Map<String, Object> jobMap = new HashMap<>();
+        jobMap.put("job", job);
+        
+        List<Keyword> keywords = keywordRepository.findByKeywordOwner(job);
+        List<String> keywordStrings = keywords.stream().map(Keyword::getKeywordName).toList();
+        jobMap.put("keywords", keywordStrings);
+        
+        return jobMap;
     }
 }

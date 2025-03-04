@@ -11,10 +11,13 @@ import org.tukma.jobs.dtos.JobCreateRequest;
 import org.tukma.jobs.models.Job;
 import org.tukma.jobs.services.JobService;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.tukma.jobs.models.Keyword;
+import org.tukma.jobs.repositories.KeywordRepository;
 
 @Controller
 @Validated
@@ -22,9 +25,11 @@ import java.util.Map;
 public class JobController {
 
     private final JobService jobService;
+    private final KeywordRepository keywordRepository;
 
-    public JobController(JobService jobService) {
+    public JobController(JobService jobService, KeywordRepository keywordRepository) {
         this.jobService = jobService;
+        this.keywordRepository = keywordRepository;
     }
 
     @PostMapping("/create-job")
@@ -35,9 +40,10 @@ public class JobController {
     }
 
     @GetMapping("/get-jobs")
-    public ResponseEntity<List<Job>> getAllJobs() {
-        List<Job> jobs = jobService.getJobByOwner((UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal());
-        return ResponseEntity.ok(jobs);
+    public ResponseEntity<List<Map<String, Object>>> getAllJobs() {
+        UserEntity currentUser = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        List<Map<String, Object>> jobsWithKeywords = jobService.getJobsWithKeywords(currentUser);
+        return ResponseEntity.ok(jobsWithKeywords);
     }
 
     @DeleteMapping("/delete-job/{accessKey}")
@@ -53,7 +59,9 @@ public class JobController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                     Map.of("message", "Cannot find job with access key: " + accessKey + "."));
         }
-        return ResponseEntity.ok(job);
+        
+        Map<String, Object> jobWithKeywords = jobService.getJobWithKeywords(job);
+        return ResponseEntity.ok(jobWithKeywords);
     }
 
     @PostMapping("/upload-application/{accessKey}")
