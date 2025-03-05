@@ -39,7 +39,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers("/ws/**").permitAll();
                     auth.requestMatchers("/api/v1/auth/**", "/api/v1/applicant/**", "/debug/**").permitAll();
-                    auth.requestMatchers("/api/v1/jobs/get-all-jobs", "/api/v1/jobs/get-job-details/**", "/api/v1/jobs/job-metadata").permitAll();
+                    auth.requestMatchers("/api/v1/jobs/get-all-jobs", "/api/v1/jobs/get-job-details/**", "/api/v1/jobs/job-metadata", "/api/v1/jobs/search").permitAll();
                     auth.requestMatchers("/api/v1/**").authenticated();
                 })
                 .headers(headers -> headers

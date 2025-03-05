@@ -143,4 +143,21 @@ public class JobController {
         return ResponseEntity.ok(pagedResponse);
     }
 
+    /**
+     * Search for jobs using semantic search functionality
+     * 
+     * @param query The search query
+     * @param page The page number (0-based, defaults to 0)
+     * @param size The number of items per page (defaults to 10)
+     * @return Paginated response containing matching jobs and pagination metadata
+     */
+    @GetMapping("/search")
+    public ResponseEntity<PagedJobsResponse> searchJobs(
+            @RequestParam String query,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        PagedJobsResponse pagedResponse = jobService.searchJobs(query, page, size);
+        return ResponseEntity.ok(pagedResponse);
+    }
+
 }
