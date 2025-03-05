@@ -14,6 +14,8 @@ import org.tukma.jobs.models.Keyword;
 import org.tukma.jobs.repositories.JobRepository;
 import org.tukma.jobs.repositories.KeywordRepository;
 
+import java.util.AbstractMap.SimpleEntry;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -45,6 +47,7 @@ public class JobService {
         job.setType(request.getType());
         job.setShiftType(request.getShiftType());
         job.setShiftLengthHours(request.getShiftLengthHours());
+        job.setLocationType(request.getLocationType());
 
         // Save the job to generate an ID before adding keywords
         jobRepository.save(job);
@@ -194,6 +197,40 @@ public class JobService {
     }
     
     /**
+     * Get all jobs with pagination for applicants, sorted by updatedAt in descending order (most recent first)
+     *
+     * @param page The page number (0-based)
+     * @param size The page size
+     * @return PagedJobsResponse containing all jobs with keywords and pagination metadata
+     */
+    public PagedJobsResponse getPagedJobsForApplicants(int page, int size) {
+        // Create pageable with sorting by updatedAt in descending order
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        
+        // Fetch page of all jobs
+        Page<Job> jobsPage = jobRepository.findAll(pageable);
+        
+        // Convert jobs to job+keywords map
+        List<Map<String, Object>> jobsWithKeywords = new ArrayList<>();
+        for (Job job : jobsPage.getContent()) {
+            jobsWithKeywords.add(getJobWithKeywords(job));
+        }
+        
+        // Create pagination metadata
+        boolean hasNextPage = jobsPage.getNumber() < jobsPage.getTotalPages() - 1;
+        PagedJobsResponse.PaginationMetadata metadata = new PagedJobsResponse.PaginationMetadata(
+                jobsPage.getNumber(),
+                jobsPage.getSize(),
+                jobsPage.getTotalElements(),
+                jobsPage.getTotalPages(),
+                hasNextPage
+        );
+        
+        // Create and return response
+        return new PagedJobsResponse(jobsWithKeywords, metadata);
+    }
+    
+    /**
      * Get a single job with its associated keywords
      *
      * @param job The job entity
@@ -232,6 +269,7 @@ public class JobService {
         job.setType(request.getType());
         job.setShiftType(request.getShiftType());
         job.setShiftLengthHours(request.getShiftLengthHours());
+        job.setLocationType(request.getLocationType());
         
         // Save updated job
         jobRepository.save(job);
@@ -253,5 +291,114 @@ public class JobService {
         }
         
         return job;
+    }
+    
+    /**
+     * Search for jobs based on semantic similarity to the query
+     *
+     * @param query The search query
+     * @param page The page number (0-based)
+     * @param size The page size
+     * @return PagedJobsResponse containing jobs that match the search criteria
+     */
+    public PagedJobsResponse searchJobs(String query, int page, int size) {
+        // First, get all jobs matching the query using the repository method
+        List<Job> matchingJobs = jobRepository.findBySearchQuery(query);
+        
+        // For each job, calculate a semantic similarity score
+        List<Map.Entry<Job, Double>> scoredJobs = new ArrayList<>();
+        for (Job job : matchingJobs) {
+            double score = calculateSemanticSimilarity(job, query);
+            scoredJobs.add(new SimpleEntry<>(job, score));
+        }
+        
+        // Sort by score in descending order
+        scoredJobs.sort(Map.Entry.<Job, Double>comparingByValue().reversed());
+        
+        // Paginate the results
+        int start = page * size;
+        int end = Math.min(start + size, scoredJobs.size());
+        List<Map.Entry<Job, Double>> pagedScoredJobs = 
+                (start < scoredJobs.size()) ? scoredJobs.subList(start, end) : new ArrayList<>();
+        
+        // Convert to the expected format
+        List<Map<String, Object>> jobsWithKeywords = new ArrayList<>();
+        for (Map.Entry<Job, Double> entry : pagedScoredJobs) {
+            Map<String, Object> jobMap = getJobWithKeywords(entry.getKey());
+            // Add the semantic similarity score to the response
+            jobMap.put("relevanceScore", entry.getValue());
+            jobsWithKeywords.add(jobMap);
+        }
+        
+        // Create pagination metadata
+        int totalPages = (int) Math.ceil((double) scoredJobs.size() / size);
+        boolean hasNextPage = page < totalPages - 1;
+        PagedJobsResponse.PaginationMetadata metadata = new PagedJobsResponse.PaginationMetadata(
+                page,
+                size,
+                scoredJobs.size(),
+                totalPages,
+                hasNextPage
+        );
+        
+        return new PagedJobsResponse(jobsWithKeywords, metadata);
+    }
+
+    /**
+     * Calculate semantic similarity between a job and a query
+     * This is a simple implementation that could be enhanced with NLP or ML techniques
+     *
+     * @param job The job to compare
+     * @param query The search query
+     * @return A similarity score between 0 and 1
+     */
+    private double calculateSemanticSimilarity(Job job, String query) {
+        query = query.toLowerCase();
+        String jobTitle = job.getTitle().toLowerCase();
+        String jobDescription = job.getDescription().toLowerCase();
+        
+        // Get keywords for this job
+        List<Keyword> keywords = keywordRepository.findByKeywordOwner(job);
+        
+        double score = 0.0;
+        
+        // Title match (weighted higher)
+        if (jobTitle.contains(query)) {
+            score += 0.5;
+        }
+        
+        // Description match
+        if (jobDescription.contains(query)) {
+            score += 0.3;
+        }
+        
+        // Keyword matches
+        for (Keyword keyword : keywords) {
+            if (keyword.getKeywordName().toLowerCase().contains(query) ||
+                query.contains(keyword.getKeywordName().toLowerCase())) {
+                score += 0.2;
+                break;  // Count only once for keywords
+            }
+        }
+        
+        // Advanced scoring: partial word matches for title and keywords
+        String[] queryWords = query.split("\\s+");
+        for (String word : queryWords) {
+            if (word.length() > 3) {  // Only consider meaningful words
+                if (jobTitle.contains(word)) {
+                    score += 0.1;
+                }
+                
+                for (Keyword keyword : keywords) {
+                    if (keyword.getKeywordName().toLowerCase().contains(word)) {
+                        score += 0.1;
+                        break;  // Count only once per word for keywords
+                    }
+                }
+            }
+        }
+        
+        // Cap the score at 1.0
+        return Math.min(score, 1.0);
     }
 }

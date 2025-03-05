@@ -95,6 +95,7 @@ public class JobController {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("jobTypes", Arrays.asList(Job.JobType.values()));
         metadata.put("shiftTypes", Arrays.asList(Job.ShiftType.values()));
+        metadata.put("locationTypes", Arrays.asList(Job.LocationType.values()));
         return ResponseEntity.ok(metadata);
     }
     
@@ -127,5 +128,37 @@ public class JobController {
         }
     }
 
+    /**
+     * Get all jobs with pagination for applicants, sorted by updatedAt (most recent first)
+     * This endpoint is intended for job applicants to browse available jobs
+     * 
+     * @param page The page number (0-based, defaults to 0)
+     * @param size The number of items per page (defaults to 10)
+     * @return Paginated response containing jobs and pagination metadata
+     */
+    @GetMapping("/get-all-jobs")
+    public ResponseEntity<PagedJobsResponse> getAllJobsPaginated(
+            @RequestParam(defaultValue = "0") int page, 
+            @RequestParam(defaultValue = "10") int size) {
+        PagedJobsResponse pagedResponse = jobService.getPagedJobsForApplicants(page, size);
+        return ResponseEntity.ok(pagedResponse);
+    }
+
+    /**
+     * Search for jobs using semantic search functionality
+     * 
+     * @param query The search query
+     * @param page The page number (0-based, defaults to 0)
+     * @param size The number of items per page (defaults to 10)
+     * @return Paginated response containing matching jobs and pagination metadata
+     */
+    @GetMapping("/search")
+    public ResponseEntity<PagedJobsResponse> searchJobs(
+            @RequestParam String query,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        PagedJobsResponse pagedResponse = jobService.searchJobs(query, page, size);
+        return ResponseEntity.ok(pagedResponse);
+    }
 
 }

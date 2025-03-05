@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.tukma.jobs.models.Job.JobType;
 import org.tukma.jobs.models.Job.ShiftType;
+import org.tukma.jobs.models.Job.LocationType;
 
 import java.util.List;
 
@@ -29,6 +30,9 @@ public class JobEditRequest {
     
     @Positive(message = "If provided, shift length must be positive")
     private Integer shiftLengthHours;
+    
+    @NotNull(message = "Location type is required")
+    private LocationType locationType;
     
     /**
      * List of keywords to associate with the job.

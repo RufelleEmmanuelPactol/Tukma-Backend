@@ -29,6 +29,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final List<String> EXCLUDED_PATHS = List.of(
             "/api/v1/auth/**",
             "/api/v1/applicant/**",
+            "/api/v1/jobs/get-all-jobs",
+            "/api/v1/jobs/get-job-details/**",
+            "/api/v1/jobs/job-metadata",
+            "/api/v1/jobs/search",
             "/debug/**",
             "/ws/**"
     );
