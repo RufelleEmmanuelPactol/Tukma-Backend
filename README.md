@@ -198,13 +198,13 @@ Get all jobs created by the authenticated user, including associated keywords.
 ]
 ```
 
-#### Get Paginated Jobs
+#### Get Paginated Jobs (Recruiter View)
 
 ```
 GET /api/v1/jobs/get-jobs-owner
 ```
 
-Get paginated jobs created by the authenticated user, sorted by most recently updated first.
+Get paginated jobs created by the authenticated user, sorted by most recently updated first. This endpoint is intended for recruiters to view their own job postings.
 
 **Parameters:**
 - `page` (optional): The page number (0-based, defaults to 0)
@@ -268,6 +268,84 @@ GET /api/v1/jobs/get-jobs-owner?page=0&size=5
     "page": 0,
     "size": 5,
     "totalElements": 8,
+    "totalPages": 2,
+    "hasNextPage": true
+  }
+}
+```
+
+#### Get All Jobs (Applicant View)
+
+```
+GET /api/v1/jobs/get-all-jobs
+```
+
+Get all available jobs with pagination, sorted by most recently updated first. This endpoint is intended for job applicants to browse available job postings and does not require authentication.
+
+**Parameters:**
+- `page` (optional): The page number (0-based, defaults to 0)
+- `size` (optional): The number of items per page (defaults to 10)
+
+**Request Example:**
+```
+GET /api/v1/jobs/get-all-jobs?page=0&size=10
+```
+
+**Response:**
+```json
+{
+  "jobs": [
+    {
+      "job": {
+        "id": 1,
+        "owner": {
+          "id": 1,
+          "username": "recruiter@example.com",
+          "firstName": "Jane",
+          "lastName": "Recruiter",
+          "isRecruiter": true,
+          "companyName": "Acme Inc."
+        },
+        "description": "We are looking for a software engineer...",
+        "title": "Software Engineer",
+        "address": "123 Main Street, San Francisco, CA 94105",
+        "accessKey": "abc-1234",
+        "type": "FULL_TIME",
+        "shiftType": "DAY_SHIFT",
+        "shiftLengthHours": 8,
+        "createdAt": "2025-02-26T10:00:00",
+        "updatedAt": "2025-03-04T15:30:00"
+      },
+      "keywords": ["java", "spring", "api", "microservices"]
+    },
+    {
+      "job": {
+        "id": 3,
+        "owner": {
+          "id": 2,
+          "username": "another-recruiter@example.com",
+          "firstName": "John",
+          "lastName": "Smith",
+          "isRecruiter": true,
+          "companyName": "Tech Solutions Inc."
+        },
+        "description": "Senior frontend developer needed for an exciting project...",
+        "title": "Senior Frontend Developer",
+        "address": "789 Oak Avenue, San Francisco, CA 94105",
+        "accessKey": "ghi-9012",
+        "type": "FULL_TIME",
+        "shiftType": "FLEXIBLE_SHIFT",
+        "shiftLengthHours": 8,
+        "createdAt": "2025-03-01T09:45:00",
+        "updatedAt": "2025-03-04T14:20:00"
+      },
+      "keywords": ["react", "javascript", "typescript", "css"]
+    }
+  ],
+  "pagination": {
+    "page": 0,
+    "size": 10,
+    "totalElements": 15,
     "totalPages": 2,
     "hasNextPage": true
   }
@@ -517,6 +595,21 @@ Message types:
 - `3`: Client text send
 - `4`: Transcription text
 - `5`: Client authentication request
+
+## API Access Information
+
+### Authentication Requirements
+
+Most API endpoints require authentication using the JWT token provided during login. However, the following endpoints are publicly accessible without authentication:
+
+- All authentication endpoints (`/api/v1/auth/**`)
+- Job listing for applicants (`/api/v1/jobs/get-all-jobs`)
+- Job details (`/api/v1/jobs/get-job-details/{accessKey}`)
+- Job metadata (`/api/v1/jobs/job-metadata`)
+- Debug endpoints (`/debug/**`)
+- WebSocket endpoints (`/ws/**`)
+
+All other endpoints require a valid JWT token to be included in the request cookies.
 
 ## Model Information
 
