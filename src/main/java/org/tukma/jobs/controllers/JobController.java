@@ -95,6 +95,7 @@ public class JobController {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("jobTypes", Arrays.asList(Job.JobType.values()));
         metadata.put("shiftTypes", Arrays.asList(Job.ShiftType.values()));
+        metadata.put("locationTypes", Arrays.asList(Job.LocationType.values()));
         return ResponseEntity.ok(metadata);
     }
     

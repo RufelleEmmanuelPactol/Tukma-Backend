@@ -47,6 +47,7 @@ public class JobService {
         job.setType(request.getType());
         job.setShiftType(request.getShiftType());
         job.setShiftLengthHours(request.getShiftLengthHours());
+        job.setLocationType(request.getLocationType());
 
         // Save the job to generate an ID before adding keywords
         jobRepository.save(job);
@@ -268,6 +269,7 @@ public class JobService {
         job.setType(request.getType());
         job.setShiftType(request.getShiftType());
         job.setShiftLengthHours(request.getShiftLengthHours());
+        job.setLocationType(request.getLocationType());
         
         // Save updated job
         jobRepository.save(job);

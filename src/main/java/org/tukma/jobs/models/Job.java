@@ -46,6 +46,10 @@ public class Job {
     @Column()
     private Integer shiftLengthHours;
     
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private LocationType locationType = LocationType.ON_SITE;
+    
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
@@ -75,5 +79,11 @@ public class Job {
         NIGHT_SHIFT,
         ROTATING_SHIFT,
         FLEXIBLE_SHIFT
+    }
+    
+    public enum LocationType {
+        REMOTE,
+        HYBRID,
+        ON_SITE
     }
 }
