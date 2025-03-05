@@ -194,6 +194,40 @@ public class JobService {
     }
     
     /**
+     * Get all jobs with pagination for applicants, sorted by updatedAt in descending order (most recent first)
+     *
+     * @param page The page number (0-based)
+     * @param size The page size
+     * @return PagedJobsResponse containing all jobs with keywords and pagination metadata
+     */
+    public PagedJobsResponse getPagedJobsForApplicants(int page, int size) {
+        // Create pageable with sorting by updatedAt in descending order
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        
+        // Fetch page of all jobs
+        Page<Job> jobsPage = jobRepository.findAll(pageable);
+        
+        // Convert jobs to job+keywords map
+        List<Map<String, Object>> jobsWithKeywords = new ArrayList<>();
+        for (Job job : jobsPage.getContent()) {
+            jobsWithKeywords.add(getJobWithKeywords(job));
+        }
+        
+        // Create pagination metadata
+        boolean hasNextPage = jobsPage.getNumber() < jobsPage.getTotalPages() - 1;
+        PagedJobsResponse.PaginationMetadata metadata = new PagedJobsResponse.PaginationMetadata(
+                jobsPage.getNumber(),
+                jobsPage.getSize(),
+                jobsPage.getTotalElements(),
+                jobsPage.getTotalPages(),
+                hasNextPage
+        );
+        
+        // Create and return response
+        return new PagedJobsResponse(jobsWithKeywords, metadata);
+    }
+    
+    /**
      * Get a single job with its associated keywords
      *
      * @param job The job entity

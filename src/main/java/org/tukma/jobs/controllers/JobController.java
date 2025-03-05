@@ -127,5 +127,20 @@ public class JobController {
         }
     }
 
+    /**
+     * Get all jobs with pagination for applicants, sorted by updatedAt (most recent first)
+     * This endpoint is intended for job applicants to browse available jobs
+     * 
+     * @param page The page number (0-based, defaults to 0)
+     * @param size The number of items per page (defaults to 10)
+     * @return Paginated response containing jobs and pagination metadata
+     */
+    @GetMapping("/get-all-jobs")
+    public ResponseEntity<PagedJobsResponse> getAllJobsPaginated(
+            @RequestParam(defaultValue = "0") int page, 
+            @RequestParam(defaultValue = "10") int size) {
+        PagedJobsResponse pagedResponse = jobService.getPagedJobsForApplicants(page, size);
+        return ResponseEntity.ok(pagedResponse);
+    }
 
 }
