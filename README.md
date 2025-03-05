@@ -352,6 +352,89 @@ GET /api/v1/jobs/get-all-jobs?page=0&size=10
 }
 ```
 
+#### Search Jobs (Semantic Search)
+
+```
+GET /api/v1/jobs/search
+```
+
+Search for jobs using semantic relevance to a query term. Results are scored based on how closely they match the search term, with matches in job titles weighted more heavily than matches in descriptions or keywords. This endpoint is publicly accessible and does not require authentication.
+
+**Parameters:**
+- `query` (required): The search term (e.g., "developer", "java")
+- `page` (optional): The page number (0-based, defaults to 0)
+- `size` (optional): The number of items per page (defaults to 10)
+
+**Request Example:**
+```
+GET /api/v1/jobs/search?query=developer&page=0&size=10
+```
+
+**Response:**
+```json
+{
+  "jobs": [
+    {
+      "job": {
+        "id": 3,
+        "owner": {
+          "id": 2,
+          "username": "recruiter@example.com",
+          "firstName": "John",
+          "lastName": "Smith",
+          "isRecruiter": true,
+          "companyName": "Tech Solutions Inc."
+        },
+        "description": "Senior frontend developer needed for an exciting project...",
+        "title": "Senior Frontend Developer",
+        "address": "789 Oak Avenue, San Francisco, CA 94105",
+        "accessKey": "ghi-9012",
+        "type": "FULL_TIME",
+        "shiftType": "FLEXIBLE_SHIFT",
+        "shiftLengthHours": 8,
+        "createdAt": "2025-03-01T09:45:00",
+        "updatedAt": "2025-03-04T14:20:00"
+      },
+      "keywords": ["javascript", "react", "frontend", "web"],
+      "relevanceScore": 0.8
+    },
+    {
+      "job": {
+        "id": 5,
+        "owner": {
+          "id": 1,
+          "username": "another-recruiter@example.com",
+          "firstName": "Jane",
+          "lastName": "Recruiter",
+          "isRecruiter": true,
+          "companyName": "Acme Inc."
+        },
+        "description": "Looking for a talented backend developer with Java experience...",
+        "title": "Backend Developer",
+        "address": "456 Market Street, San Francisco, CA 94105",
+        "accessKey": "jkl-3456",
+        "type": "FULL_TIME",
+        "shiftType": "DAY_SHIFT",
+        "shiftLengthHours": 8,
+        "createdAt": "2025-02-28T14:15:00",
+        "updatedAt": "2025-03-03T10:30:00"
+      },
+      "keywords": ["java", "spring", "backend", "api"],
+      "relevanceScore": 0.7
+    }
+  ],
+  "pagination": {
+    "page": 0,
+    "size": 10,
+    "totalElements": 8,
+    "totalPages": 1,
+    "hasNextPage": false
+  }
+}
+```
+
+Note that each job includes a `relevanceScore` field indicating how closely it matches the search query. Scores range from 0 to 1, with higher values indicating better matches.
+
 #### Get Job Details
 
 ```
@@ -604,6 +687,7 @@ Most API endpoints require authentication using the JWT token provided during lo
 
 - All authentication endpoints (`/api/v1/auth/**`)
 - Job listing for applicants (`/api/v1/jobs/get-all-jobs`)
+- Job search endpoint (`/api/v1/jobs/search`)
 - Job details (`/api/v1/jobs/get-job-details/{accessKey}`)
 - Job metadata (`/api/v1/jobs/job-metadata`)
 - Debug endpoints (`/debug/**`)
