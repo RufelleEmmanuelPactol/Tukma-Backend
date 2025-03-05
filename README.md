@@ -19,23 +19,23 @@ Creates a new user account.
 **Request Body (for Applicants):**
 ```json
 {
-  "email": "applicant@example.com",
-  "password": "password123",
-  "firstName": "John",
-  "lastName": "Doe",
-  "isApplicant": true
+  "email": "applicant@example.com",        // required
+  "password": "password123",             // required
+  "firstName": "John",                  // required
+  "lastName": "Doe",                    // required
+  "isApplicant": true                     // required
 }
 ```
 
 **Request Body (for Recruiters):**
 ```json
 {
-  "email": "recruiter@example.com",
-  "password": "password123",
-  "firstName": "Jane",
-  "lastName": "Smith",
-  "isApplicant": false,
-  "companyName": "Acme Inc."
+  "email": "recruiter@example.com",       // required
+  "password": "password123",             // required
+  "firstName": "Jane",                  // required
+  "lastName": "Smith",                  // required
+  "isApplicant": false,                   // required
+  "companyName": "Acme Inc."             // required for recruiters
 }
 ```
 
@@ -55,8 +55,8 @@ Authenticate a user and get a JWT token.
 **Request Body:**
 ```json
 {
-  "email": "user@example.com",
-  "password": "password123"
+  "email": "user@example.com",           // required
+  "password": "password123"              // required
 }
 ```
 
@@ -105,13 +105,14 @@ Create a new job posting.
 **Request Body:**
 ```json
 {
-  "title": "Software Engineer",
-  "description": "We are looking for a software engineer...",
-  "address": "123 Main Street, San Francisco, CA 94105",
-  "type": "FULL_TIME",
-  "shiftType": "DAY_SHIFT",
-  "shiftLengthHours": 8,
-  "keywords": ["java", "spring", "api", "microservices"]
+  "title": "Software Engineer",              // required
+  "description": "We are looking for...",     // required
+  "address": "123 Main Street, SF, CA",       // required
+  "type": "FULL_TIME",                        // required
+  "shiftType": "DAY_SHIFT",                   // optional
+  "shiftLengthHours": 8,                       // optional
+  "locationType": "ON_SITE",                  // required
+  "keywords": ["java", "spring", "api"]      // optional
 }
 ```
 
@@ -511,13 +512,14 @@ Update an existing job posting.
 **Request Body:**
 ```json
 {
-  "title": "Updated Software Engineer",
-  "description": "We are looking for an experienced software engineer...",
-  "address": "123 Main Street, San Francisco, CA 94105",
-  "type": "FULL_TIME",
-  "shiftType": "DAY_SHIFT",
-  "shiftLengthHours": 8,
-  "keywords": ["java", "spring", "api", "microservices", "cloud"]
+  "title": "Updated Software Engineer",        // required
+  "description": "We are looking for...",     // required
+  "address": "123 Main Street, SF, CA",       // required
+  "type": "FULL_TIME",                        // required
+  "shiftType": "DAY_SHIFT",                   // optional
+  "shiftLengthHours": 8,                       // optional
+  "locationType": "ON_SITE",                  // required
+  "keywords": ["java", "spring", "api"]      // optional
 }
 ```
 
@@ -565,7 +567,8 @@ Get all available job types and shift types.
 ```json
 {
   "jobTypes": ["FULL_TIME", "PART_TIME", "INTERNSHIP", "CONTRACT"],
-  "shiftTypes": ["DAY_SHIFT", "NIGHT_SHIFT", "ROTATING_SHIFT", "FLEXIBLE_SHIFT"]
+  "shiftTypes": ["DAY_SHIFT", "NIGHT_SHIFT", "ROTATING_SHIFT", "FLEXIBLE_SHIFT"],
+  "locationTypes": ["REMOTE", "HYBRID", "ON_SITE"]
 }
 ```
 
@@ -581,8 +584,8 @@ Upload a resume file with keywords for analysis.
 
 **Request Body:**
 Multipart form data:
-- `resume`: PDF file
-- `keywords`: List of keywords
+- `resume`: PDF file (required)
+- `keywords`: List of keywords (required, at least one keyword)
 
 **Response:**
 ```json
@@ -709,6 +712,52 @@ All other endpoints require a valid JWT token to be included in the request cook
 - `ROTATING_SHIFT`: Schedule that changes regularly
 - `FLEXIBLE_SHIFT`: Flexible working hours
 
+### Location Types
+- `REMOTE`: Work performed entirely from home or location of employee's choice
+- `HYBRID`: Combination of remote and in-office work
+- `ON_SITE`: Work performed entirely at the employer's location
+
 ### User Types
 - `Applicant (isApplicant=true)`: A job seeker who can upload resumes and apply to jobs
 - `Recruiter (isApplicant=false)`: A user who can create and manage job postings
+
+## Field Requirements
+
+### Authentication
+
+#### Sign Up - Applicants
+- `email`: Required - Must be a unique email address
+- `password`: Required - User's password
+- `firstName`: Required - User's first name
+- `lastName`: Required - User's last name
+- `isApplicant`: Required - Must be set to `true` for applicants
+
+#### Sign Up - Recruiters
+- `email`: Required - Must be a unique email address
+- `password`: Required - User's password
+- `firstName`: Required - User's first name
+- `lastName`: Required - User's last name
+- `isApplicant`: Required - Must be set to `false` for recruiters
+- `companyName`: Required for recruiters - Company or organization name
+
+#### Login
+- `email`: Required - Registered email address
+- `password`: Required - User's password
+
+### Jobs
+
+#### Create/Edit Job
+- `title`: Required - Job title
+- `description`: Required - Detailed job description
+- `address`: Required - Physical location of the job
+- `type`: Required - One of: FULL_TIME, PART_TIME, INTERNSHIP, CONTRACT
+- `locationType`: Required - One of: REMOTE, HYBRID, ON_SITE
+- `shiftType`: Optional - One of: DAY_SHIFT, NIGHT_SHIFT, ROTATING_SHIFT, FLEXIBLE_SHIFT
+- `shiftLengthHours`: Optional - Positive integer representing shift length in hours
+- `keywords`: Optional - Array of strings representing skills or keywords
+
+### Resume Processing
+
+#### Upload Resume
+- `resume`: Required - PDF file of the resume
+- `keywords`: Required - At least one keyword for comparison
