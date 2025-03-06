@@ -41,6 +41,8 @@ public class ModifiedUserServices implements org.springframework.security.core.u
         user.setPassword(hashPassword(password));
         user.setFirstName(firstName);
         user.setLastName(lastName);
+        
+        // If isApplicant is true, then isRecruiter should be false, and vice versa
         user.setRecruiter(!isApplicant);
         
         // Only set company name if user is a recruiter (isApplicant is false)
@@ -49,7 +51,6 @@ public class ModifiedUserServices implements org.springframework.security.core.u
         }
         
         return userRepository.save(user);
-
     }
 
 }
