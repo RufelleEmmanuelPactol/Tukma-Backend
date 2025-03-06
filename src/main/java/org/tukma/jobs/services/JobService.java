@@ -138,16 +138,6 @@ public class JobService {
     public void deleteJob(Long id) {
         jobRepository.deleteById(id);
     }
-    
-    /**
-     * Get a job by its ID
-     *
-     * @param id The job ID
-     * @return The job entity or null if not found
-     */
-    public Job getJobById(Long id) {
-        return jobRepository.findById(id).orElse(null);
-    }
 
 
     public List<Job> getJobByOwner(UserEntity entity) {
