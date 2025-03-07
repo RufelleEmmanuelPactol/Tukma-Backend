@@ -60,8 +60,6 @@ public class SignUpDto {
 
     private boolean isApplicant;
 
-    @Setter
-    @Getter
     private String companyName;
 
 }

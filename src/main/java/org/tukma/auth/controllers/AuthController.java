@@ -54,17 +54,30 @@ public class AuthController {
 
 
     @PostMapping("/signup")
-    public ResponseEntity<?> signUp(@Valid @RequestBody SignUpDto signUp) {
-        if (userService.userExists(signUp.getEmail())) {
+    public ResponseEntity<?> signUp(@Valid @RequestBody Map<String, Object> requestBody) {
+        // Extract data from request body to ensure proper boolean handling
+        String email = (String) requestBody.get("email");
+        String password = (String) requestBody.get("password");
+        String firstName = (String) requestBody.get("firstName");
+        String lastName = (String) requestBody.get("lastName");
+        Boolean isApplicant = (Boolean) requestBody.get("isApplicant");
+        String companyName = (String) requestBody.get("companyName");
+        
+        // Default to true if not provided (assuming most users will be applicants)
+        boolean isUserApplicant = isApplicant != null ? isApplicant : true;
+        
+        if (userService.userExists(email)) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body("user already exists");
         }
-
-        var returnVal = userService.createUser(signUp.getEmail(), signUp.getPassword(), signUp.getFirstName(), signUp.getLastName(), signUp.isApplicant(), signUp.getCompanyName());
-        if (returnVal != null) return ResponseEntity.ok().build();
-        else return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Cannot determine error in auth.");
-
-
+        
+        var returnVal = userService.createUser(email, password, firstName, lastName, isUserApplicant, companyName);
+        
+        if (returnVal != null) {
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Cannot determine error in auth.");
+        }
     }
 
     // generate random 12-character string
@@ -125,7 +138,6 @@ public class AuthController {
         }
         var currentUser = auth.getPrincipal();
         return ResponseEntity.ok(Map.of("userDetails", currentUser));
-
     }
 
 
