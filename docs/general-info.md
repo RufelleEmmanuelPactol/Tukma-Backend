@@ -91,3 +91,39 @@ The API implements rate limiting to prevent abuse. Current limits:
 When rate limits are exceeded, the API returns:
 - Status code: `429 Too Many Requests`
 - Response body: `{"message": "Rate limit exceeded. Please try again later."}`
+
+## Cross-Origin Resource Sharing (CORS)
+
+The API supports CORS for integrating with frontend applications. The following origins are allowed:
+
+- `http://localhost:3000` (Local development)
+- `http://127.0.0.1:5500` (Local development alternative)
+
+Allowed methods:
+- GET
+- POST
+- PUT
+- DELETE
+
+Credentials (cookies) are allowed to be included with requests.
+
+## Data Retention
+
+Tukma maintains the following data retention policies:
+
+- User accounts: Indefinitely, until deleted by the user
+- Job postings: 180 days after the posting date (or until manually deleted)
+- Resume data: 180 days after submission
+- Interview recordings: 30 days after interview completion
+
+## API Versioning
+
+All API endpoints are prefixed with `/api/v1/` to indicate the API version. When breaking changes are introduced, a new version will be released under `/api/v2/`.
+
+## Technologies Used
+
+- Spring Boot 3.4.1
+- JWT Authentication
+- PostgreSQL Database
+- Redis for caching and session management
+- OpenAI API for AI services

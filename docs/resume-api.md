@@ -20,7 +20,7 @@ Multipart form data:
 **Response:**
 ```json
 {
-  "hash": "uniqueIdentifier"
+  "hash": "d8e8fca2dc0f896fd7cb4cb0031ba249"
 }
 ```
 
@@ -43,7 +43,7 @@ Multipart form data:
 **Response (Success - 200 OK):**
 ```json
 {
-  "hash": "uniqueIdentifier"
+  "hash": "d8e8fca2dc0f896fd7cb4cb0031ba249"
 }
 ```
 
@@ -68,9 +68,14 @@ Check the status of resume processing.
 **Response:**
 ```json
 {
-  "result": "PROCESSING" | "COMPLETED" | "FAILED"
+  "result": "PROCESSING"
 }
 ```
+
+Possible status values:
+- `PROCESSING`: Resume is still being analyzed
+- `COMPLETED`: Analysis is complete
+- `FAILED`: Analysis failed
 
 ### Get Similarity Score
 
@@ -86,7 +91,7 @@ Get the similarity analysis results for a processed resume. If the resume is ass
 **Response:**
 ```json
 {
-  "hash": "uniqueIdentifier",
+  "hash": "d8e8fca2dc0f896fd7cb4cb0031ba249",
   "result": {
     "javascript": {
       "similarity_score": 0.48658517708123633,
@@ -99,6 +104,14 @@ Get the similarity analysis results for a processed resume. If the resume is ass
     "software engineer": {
       "similarity_score": 0.6592739827568643,
       "best_matching_ngram": "Information Technology Engineers"
+    },
+    "react": {
+      "similarity_score": 0.5287356734275817,
+      "best_matching_ngram": "React and Angular"
+    },
+    "node.js": {
+      "similarity_score": 0.4128973567823456,
+      "best_matching_ngram": "Node.js applications"
     }
   }
 }
@@ -120,12 +133,20 @@ Get stored resume data from the database with the parsed results.
 {
   "resume": {
     "id": 1,
-    "resumeHash": "uniqueIdentifier",
-    "results": "...", // Raw results JSON
+    "resumeHash": "d8e8fca2dc0f896fd7cb4cb0031ba249",
+    "results": "{\"javascript\":{\"similarity_score\":0.48658517708123633,\"best_matching_ngram\":\"in Laravel, JavaScript,\"},\"frontend\":{\"similarity_score\":0.6945115131278724,\"best_matching_ngram\":\"the frontend and\"},\"software engineer\":{\"similarity_score\":0.6592739827568643,\"best_matching_ngram\":\"Information Technology Engineers\"},\"react\":{\"similarity_score\":0.5287356734275817,\"best_matching_ngram\":\"React and Angular\"},\"node.js\":{\"similarity_score\":0.4128973567823456,\"best_matching_ngram\":\"Node.js applications\"}}",
     "job": {
       "id": 5,
       "title": "Software Engineer",
-      "...": "..."
+      "description": "We're looking for a talented software engineer with JavaScript experience...",
+      "address": "123 Main St, San Francisco, CA",
+      "accessKey": "abc-1234",
+      "type": "FULL_TIME",
+      "shiftType": "DAY_SHIFT",
+      "shiftLengthHours": 8,
+      "locationType": "HYBRID",
+      "createdAt": "2025-02-20T12:00:00",
+      "updatedAt": "2025-02-20T12:00:00"
     },
     "owner": {
       "id": 3,
@@ -143,6 +164,18 @@ Get stored resume data from the database with the parsed results.
     "frontend": {
       "similarity_score": 0.6945115131278724,
       "best_matching_ngram": "the frontend and"
+    },
+    "software engineer": {
+      "similarity_score": 0.6592739827568643,
+      "best_matching_ngram": "Information Technology Engineers"
+    },
+    "react": {
+      "similarity_score": 0.5287356734275817,
+      "best_matching_ngram": "React and Angular"
+    },
+    "node.js": {
+      "similarity_score": 0.4128973567823456,
+      "best_matching_ngram": "Node.js applications"
     }
   }
 }
@@ -167,32 +200,79 @@ Get all resumes submitted for a specific job. This endpoint is only accessible t
   "job": {
     "id": 5,
     "title": "Software Engineer",
+    "description": "We're looking for a talented software engineer with JavaScript experience...",
+    "address": "123 Main St, San Francisco, CA",
     "accessKey": "abc-1234",
-    "...": "..."
+    "type": "FULL_TIME",
+    "shiftType": "DAY_SHIFT",
+    "shiftLengthHours": 8,
+    "locationType": "HYBRID",
+    "createdAt": "2025-02-20T12:00:00",
+    "updatedAt": "2025-02-20T12:00:00",
+    "owner": {
+      "id": 1,
+      "username": "recruiter@example.com",
+      "firstName": "Jane",
+      "lastName": "Recruiter",
+      "isRecruiter": true,
+      "companyName": "Tech Company Inc."
+    }
   },
   "resumes": [
     {
       "resume": {
         "id": 1,
-        "resumeHash": "uniqueIdentifier1",
-        "...": "..."
+        "resumeHash": "d8e8fca2dc0f896fd7cb4cb0031ba249",
+        "results": "{\"javascript\":{\"similarity_score\":0.7,\"best_matching_ngram\":\"JavaScript developer with 5 years\"},\"react\":{\"similarity_score\":0.65,\"best_matching_ngram\":\"React development\"},\"node.js\":{\"similarity_score\":0.55,\"best_matching_ngram\":\"Node.js backend applications\"}}",
+        "owner": {
+          "id": 3,
+          "username": "applicant1@example.com",
+          "firstName": "John",
+          "lastName": "Doe",
+          "isRecruiter": false
+        }
       },
       "parsedResults": {
         "javascript": {
           "similarity_score": 0.7,
           "best_matching_ngram": "JavaScript developer with 5 years"
         },
-        "...": "..."
+        "react": {
+          "similarity_score": 0.65,
+          "best_matching_ngram": "React development"
+        },
+        "node.js": {
+          "similarity_score": 0.55,
+          "best_matching_ngram": "Node.js backend applications"
+        }
       }
     },
     {
       "resume": {
         "id": 2,
-        "resumeHash": "uniqueIdentifier2",
-        "...": "..."
+        "resumeHash": "a87ff679a2f3e71d9181a67b7542122c",
+        "results": "{\"javascript\":{\"similarity_score\":0.6,\"best_matching_ngram\":\"JavaScript frameworks\"},\"react\":{\"similarity_score\":0.8,\"best_matching_ngram\":\"Senior React developer\"},\"node.js\":{\"similarity_score\":0.45,\"best_matching_ngram\":\"Node.js experience\"}}",
+        "owner": {
+          "id": 4,
+          "username": "applicant2@example.com",
+          "firstName": "Jane",
+          "lastName": "Smith",
+          "isRecruiter": false
+        }
       },
       "parsedResults": {
-        "...": "..."
+        "javascript": {
+          "similarity_score": 0.6,
+          "best_matching_ngram": "JavaScript frameworks"
+        },
+        "react": {
+          "similarity_score": 0.8,
+          "best_matching_ngram": "Senior React developer"
+        },
+        "node.js": {
+          "similarity_score": 0.45,
+          "best_matching_ngram": "Node.js experience"
+        }
       }
     }
   ]
@@ -219,35 +299,83 @@ Get all resumes submitted by the currently authenticated applicant user.
     {
       "resume": {
         "id": 1,
-        "resumeHash": "uniqueIdentifier1",
-        "...": "..."
+        "resumeHash": "d8e8fca2dc0f896fd7cb4cb0031ba249",
+        "results": "{\"javascript\":{\"similarity_score\":0.7,\"best_matching_ngram\":\"JavaScript developer with 5 years\"},\"react\":{\"similarity_score\":0.65,\"best_matching_ngram\":\"React development\"},\"node.js\":{\"similarity_score\":0.55,\"best_matching_ngram\":\"Node.js backend applications\"}}",
+        "owner": {
+          "id": 3,
+          "username": "applicant@example.com",
+          "firstName": "John",
+          "lastName": "Doe",
+          "isRecruiter": false
+        }
       },
       "parsedResults": {
         "javascript": {
           "similarity_score": 0.7,
           "best_matching_ngram": "JavaScript developer with 5 years"
         },
-        "...": "..."
+        "react": {
+          "similarity_score": 0.65,
+          "best_matching_ngram": "React development"
+        },
+        "node.js": {
+          "similarity_score": 0.55,
+          "best_matching_ngram": "Node.js backend applications"
+        }
       },
       "job": {
         "id": 5,
         "title": "Software Engineer",
-        "...": "..."
+        "description": "We're looking for a talented software engineer with JavaScript experience...",
+        "address": "123 Main St, San Francisco, CA",
+        "accessKey": "abc-1234",
+        "type": "FULL_TIME",
+        "shiftType": "DAY_SHIFT",
+        "shiftLengthHours": 8,
+        "locationType": "HYBRID",
+        "createdAt": "2025-02-20T12:00:00",
+        "updatedAt": "2025-02-20T12:00:00"
       }
     },
     {
       "resume": {
         "id": 2,
-        "resumeHash": "uniqueIdentifier2",
-        "...": "..."
+        "resumeHash": "a87ff679a2f3e71d9181a67b7542122c",
+        "results": "{\"python\":{\"similarity_score\":0.8,\"best_matching_ngram\":\"Python developer\"},\"ml\":{\"similarity_score\":0.75,\"best_matching_ngram\":\"Machine learning algorithms\"},\"data science\":{\"similarity_score\":0.7,\"best_matching_ngram\":\"Data science projects\"}}",
+        "owner": {
+          "id": 3,
+          "username": "applicant@example.com",
+          "firstName": "John",
+          "lastName": "Doe",
+          "isRecruiter": false
+        }
       },
       "parsedResults": {
-        "...": "..."
+        "python": {
+          "similarity_score": 0.8,
+          "best_matching_ngram": "Python developer"
+        },
+        "ml": {
+          "similarity_score": 0.75,
+          "best_matching_ngram": "Machine learning algorithms"
+        },
+        "data science": {
+          "similarity_score": 0.7,
+          "best_matching_ngram": "Data science projects"
+        }
       },
       "job": {
         "id": 7,
-        "title": "Frontend Developer",
-        "...": "..."
+        "title": "Data Scientist",
+        "description": "Looking for a data scientist with strong Python and ML skills...",
+        "address": "456 Market St, San Francisco, CA",
+        "accessKey": "def-5678",
+        "type": "FULL_TIME",
+        "shiftType": "FLEXIBLE_SHIFT",
+        "shiftLengthHours": 8,
+        "locationType": "REMOTE",
+        "createdAt": "2025-02-22T10:00:00",
+        "updatedAt": "2025-02-22T10:00:00"
       }
     }
   ]
@@ -274,21 +402,50 @@ Get the resume submitted by the current applicant user for a specific job.
 {
   "resume": {
     "id": 1,
-    "resumeHash": "uniqueIdentifier",
-    "...": "..."
+    "resumeHash": "d8e8fca2dc0f896fd7cb4cb0031ba249",
+    "results": "{\"javascript\":{\"similarity_score\":0.7,\"best_matching_ngram\":\"JavaScript developer with 5 years\"},\"react\":{\"similarity_score\":0.65,\"best_matching_ngram\":\"React development\"},\"node.js\":{\"similarity_score\":0.55,\"best_matching_ngram\":\"Node.js backend applications\"}}",
+    "owner": {
+      "id": 3,
+      "username": "applicant@example.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "isRecruiter": false
+    }
   },
   "parsedResults": {
     "javascript": {
       "similarity_score": 0.7,
       "best_matching_ngram": "JavaScript developer with 5 years"
     },
-    "...": "..."
+    "react": {
+      "similarity_score": 0.65,
+      "best_matching_ngram": "React development"
+    },
+    "node.js": {
+      "similarity_score": 0.55,
+      "best_matching_ngram": "Node.js backend applications"
+    }
   },
   "job": {
     "id": 5,
     "title": "Software Engineer",
+    "description": "We're looking for a talented software engineer with JavaScript experience...",
+    "address": "123 Main St, San Francisco, CA",
     "accessKey": "abc-1234",
-    "...": "..."
+    "type": "FULL_TIME",
+    "shiftType": "DAY_SHIFT",
+    "shiftLengthHours": 8,
+    "locationType": "HYBRID",
+    "createdAt": "2025-02-20T12:00:00",
+    "updatedAt": "2025-02-20T12:00:00",
+    "owner": {
+      "id": 1,
+      "username": "recruiter@example.com",
+      "firstName": "Jane",
+      "lastName": "Recruiter",
+      "isRecruiter": true,
+      "companyName": "Tech Company Inc."
+    }
   }
 }
 ```
@@ -315,15 +472,29 @@ Get a specific applicant's resume for a job. This endpoint is only accessible to
 {
   "resume": {
     "id": 1,
-    "resumeHash": "uniqueIdentifier",
-    "...": "..."
+    "resumeHash": "d8e8fca2dc0f896fd7cb4cb0031ba249",
+    "results": "{\"javascript\":{\"similarity_score\":0.7,\"best_matching_ngram\":\"JavaScript developer with 5 years\"},\"react\":{\"similarity_score\":0.65,\"best_matching_ngram\":\"React development\"},\"node.js\":{\"similarity_score\":0.55,\"best_matching_ngram\":\"Node.js backend applications\"}}",
+    "owner": {
+      "id": 3,
+      "username": "applicant@example.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "isRecruiter": false
+    }
   },
   "parsedResults": {
     "javascript": {
       "similarity_score": 0.7,
       "best_matching_ngram": "JavaScript developer with 5 years"
     },
-    "...": "..."
+    "react": {
+      "similarity_score": 0.65,
+      "best_matching_ngram": "React development"
+    },
+    "node.js": {
+      "similarity_score": 0.55,
+      "best_matching_ngram": "Node.js backend applications"
+    }
   },
   "applicant": {
     "id": 3,
@@ -335,8 +506,23 @@ Get a specific applicant's resume for a job. This endpoint is only accessible to
   "job": {
     "id": 5,
     "title": "Software Engineer",
+    "description": "We're looking for a talented software engineer with JavaScript experience...",
+    "address": "123 Main St, San Francisco, CA",
     "accessKey": "abc-1234",
-    "...": "..."
+    "type": "FULL_TIME",
+    "shiftType": "DAY_SHIFT",
+    "shiftLengthHours": 8,
+    "locationType": "HYBRID",
+    "createdAt": "2025-02-20T12:00:00",
+    "updatedAt": "2025-02-20T12:00:00",
+    "owner": {
+      "id": 1,
+      "username": "recruiter@example.com",
+      "firstName": "Jane",
+      "lastName": "Recruiter",
+      "isRecruiter": true,
+      "companyName": "Tech Company Inc."
+    }
   }
 }
 ```
