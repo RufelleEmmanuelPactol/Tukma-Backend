@@ -84,7 +84,28 @@ Get all jobs created by the authenticated user, including associated keywords.
     },
     "keywords": ["java", "spring", "api", "microservices"]
   },
-  /* Additional jobs... */
+  {
+    "job": {
+      "id": 2,
+      "owner": {
+        "id": 1,
+        "username": "recruiter@example.com",
+        "firstName": "Jane",
+        "lastName": "Recruiter",
+        "isRecruiter": true
+      },
+      "description": "Looking for a product manager with 3+ years of experience...",
+      "title": "Product Manager",
+      "address": "456 Market Street, San Francisco, CA 94105",
+      "accessKey": "def-5678",
+      "type": "FULL_TIME",
+      "shiftType": "FLEXIBLE_SHIFT",
+      "shiftLengthHours": 8,
+      "createdAt": "2025-02-25T15:30:00",
+      "updatedAt": "2025-02-25T15:30:00"
+    },
+    "keywords": ["product management", "agile", "leadership"]
+  }
 ]
 ```
 
@@ -131,7 +152,28 @@ GET /api/v1/jobs/get-jobs-owner?page=0&size=5
       },
       "keywords": ["java", "spring", "api", "microservices"]
     },
-    /* Additional jobs... */
+    {
+      "job": {
+        "id": 2,
+        "owner": {
+          "id": 1,
+          "username": "recruiter@example.com",
+          "firstName": "Jane",
+          "lastName": "Recruiter",
+          "isRecruiter": true
+        },
+        "description": "Looking for a product manager with 3+ years of experience...",
+        "title": "Product Manager",
+        "address": "456 Market Street, San Francisco, CA 94105",
+        "accessKey": "def-5678",
+        "type": "FULL_TIME",
+        "shiftType": "FLEXIBLE_SHIFT",
+        "shiftLengthHours": 8,
+        "createdAt": "2025-02-25T15:30:00",
+        "updatedAt": "2025-02-25T15:30:00"
+      },
+      "keywords": ["product management", "agile", "leadership"]
+    }
   ],
   "pagination": {
     "page": 0,
@@ -187,7 +229,29 @@ GET /api/v1/jobs/get-all-jobs?page=0&size=10
       },
       "keywords": ["java", "spring", "api", "microservices"]
     },
-    /* Additional jobs... */
+    {
+      "job": {
+        "id": 3,
+        "owner": {
+          "id": 2,
+          "username": "another-recruiter@example.com",
+          "firstName": "John",
+          "lastName": "Smith",
+          "isRecruiter": true,
+          "companyName": "Tech Solutions Inc."
+        },
+        "description": "Senior frontend developer needed for an exciting project...",
+        "title": "Senior Frontend Developer",
+        "address": "789 Oak Avenue, San Francisco, CA 94105",
+        "accessKey": "ghi-9012",
+        "type": "FULL_TIME",
+        "shiftType": "FLEXIBLE_SHIFT",
+        "shiftLengthHours": 8,
+        "createdAt": "2025-03-01T09:45:00",
+        "updatedAt": "2025-03-04T14:20:00"
+      },
+      "keywords": ["react", "javascript", "typescript", "css"]
+    }
   ],
   "pagination": {
     "page": 0,
@@ -245,7 +309,30 @@ GET /api/v1/jobs/search?query=developer&page=0&size=10
       "keywords": ["javascript", "react", "frontend", "web"],
       "relevanceScore": 0.8
     },
-    /* Additional jobs... */
+    {
+      "job": {
+        "id": 5,
+        "owner": {
+          "id": 1,
+          "username": "another-recruiter@example.com",
+          "firstName": "Jane",
+          "lastName": "Recruiter",
+          "isRecruiter": true,
+          "companyName": "Acme Inc."
+        },
+        "description": "Looking for a talented backend developer with Java experience...",
+        "title": "Backend Developer",
+        "address": "456 Market Street, San Francisco, CA 94105",
+        "accessKey": "jkl-3456",
+        "type": "FULL_TIME",
+        "shiftType": "DAY_SHIFT",
+        "shiftLengthHours": 8,
+        "createdAt": "2025-02-28T14:15:00",
+        "updatedAt": "2025-03-03T10:30:00"
+      },
+      "keywords": ["java", "spring", "backend", "api"],
+      "relevanceScore": 0.7
+    }
   ],
   "pagination": {
     "page": 0,
