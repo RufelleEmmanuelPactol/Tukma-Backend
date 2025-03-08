@@ -129,4 +129,26 @@ public class ResumeDataService {
             return Map.of();
         }
     }
+    
+    /**
+     * Get resumes submitted by a specific user for a specific job
+     * 
+     * @param jobId The ID of the job
+     * @param userId The ID of the user
+     * @return List of resumes
+     */
+    public List<Resume> getResumesByJobAndUser(Long jobId, Long userId) {
+        return resumeRepository.findAllByJob_IdAndOwner_Id(jobId, userId);
+    }
+    
+    /**
+     * Get a single resume submitted by a specific user for a specific job
+     * 
+     * @param jobId The ID of the job
+     * @param userId The ID of the user
+     * @return Optional containing the Resume entity if found
+     */
+    public Optional<Resume> getResumeByJobAndUser(Long jobId, Long userId) {
+        return resumeRepository.findByJob_IdAndOwner_Id(jobId, userId);
+    }
 }

@@ -267,4 +267,118 @@ public ResumeController(ResumeClientService resumeClientService, ResumeDataServi
             "resumes", formattedResumes
         ));
     }
+    
+    /**
+     * Get the resume submitted by the current applicant user for a specific job
+     *
+     * @param accessKey The access key of the job
+     * @return Resume data with parsed results
+     */
+    @GetMapping("/my-application/{accessKey}")
+    public ResponseEntity<?> getMyApplicationForJob(@PathVariable String accessKey) {
+        // Check authentication
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                "error", "You must be logged in to view your application"
+            ));
+        }
+        
+        UserEntity currentUser = (UserEntity) auth.getPrincipal();
+        
+        // Only allow applicants to access this endpoint
+        if (currentUser.isRecruiter()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                "error", "This endpoint is only available for applicants"
+            ));
+        }
+        
+        // Find job by access key
+        Job job = jobService.getByAccessKey(accessKey);
+        if (job == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "error", "Job not found with access key: " + accessKey
+            ));
+        }
+        
+        // Get resume for this user and job
+        Long userId = currentUser.getId();
+        Optional<Resume> resumeOpt = resumeDataService.getResumeByJobAndUser(job.getId(), userId);
+        
+        if (resumeOpt.isPresent()) {
+            Resume resume = resumeOpt.get();
+            Map<String, Object> response = new HashMap<>();
+            response.put("resume", resume);
+            response.put("parsedResults", resumeDataService.parseResumeResults(resume));
+            response.put("job", job);
+            
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "error", "No application found for this job"
+            ));
+        }
+    }
+    
+    /**
+     * Get a specific applicant's resume for a job (for recruiters)
+     *
+     * @param accessKey The access key of the job
+     * @param applicantId The ID of the applicant
+     * @return Resume data with parsed results
+     */
+    @GetMapping("/job/{accessKey}/applicant/{applicantId}")
+    public ResponseEntity<?> getApplicantResumeForJob(
+            @PathVariable String accessKey,
+            @PathVariable Long applicantId) {
+        // Check authentication
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                "error", "You must be logged in to view applicant resumes"
+            ));
+        }
+        
+        UserEntity currentUser = (UserEntity) auth.getPrincipal();
+        
+        // Only allow recruiters to access this endpoint
+        if (!currentUser.isRecruiter()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                "error", "This endpoint is only available for recruiters"
+            ));
+        }
+        
+        // Find job by access key
+        Job job = jobService.getByAccessKey(accessKey);
+        if (job == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "error", "Job not found with access key: " + accessKey
+            ));
+        }
+        
+        // Check if the current recruiter is the owner of the job
+        if (!job.getOwner().getId().equals(currentUser.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                "error", "You are not authorized to view resumes for this job"
+            ));
+        }
+        
+        // Get resume for the specified applicant and job
+        Optional<Resume> resumeOpt = resumeDataService.getResumeByJobAndUser(job.getId(), applicantId);
+        
+        if (resumeOpt.isPresent()) {
+            Resume resume = resumeOpt.get();
+            Map<String, Object> response = new HashMap<>();
+            response.put("resume", resume);
+            response.put("parsedResults", resumeDataService.parseResumeResults(resume));
+            response.put("applicant", resume.getOwner());
+            response.put("job", job);
+            
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "error", "No application found for this applicant and job"
+            ));
+        }
+    }
 }
