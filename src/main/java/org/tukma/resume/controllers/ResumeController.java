@@ -227,4 +227,44 @@ public ResumeController(ResumeClientService resumeClientService, ResumeDataServi
             "error", "You must be logged in to view resumes"
         ));
     }
+
+    /**
+     * Get all resumes submitted by the currently authenticated applicant user
+     *
+     * @return List of all resumes with their parsed results
+     */
+    @GetMapping("/my-resumes")
+    public ResponseEntity<?> getMyResumes() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                "error", "You must be logged in to view your resumes"
+            ));
+        }
+        
+        UserEntity currentUser = (UserEntity) auth.getPrincipal();
+        
+        // Only allow applicants to access this endpoint
+        if (currentUser.isRecruiter()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                "error", "This endpoint is only available for applicants"
+            ));
+        }
+        
+        Long userId = currentUser.getId();
+        List<Resume> resumes = resumeDataService.getResumesByUser(userId);
+        
+        // Convert resumes to a more frontend-friendly format with parsed results
+        List<Map<String, Object>> formattedResumes = resumes.stream().map(resume -> {
+            Map<String, Object> formatted = new HashMap<>();
+            formatted.put("resume", resume);
+            formatted.put("parsedResults", resumeDataService.parseResumeResults(resume));
+            formatted.put("job", resume.getJob());
+            return formatted;
+        }).collect(java.util.stream.Collectors.toList());
+        
+        return ResponseEntity.ok(Map.of(
+            "resumes", formattedResumes
+        ));
+    }
 }
