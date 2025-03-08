@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.http.HttpStatus;
 
 /**
  * REST controller for resume-related operations.
@@ -108,55 +109,37 @@ public ResumeController(ResumeClientService resumeClientService, ResumeDataServi
     }
 
     /**
-     * Retrieves the similarity score for a previously uploaded resume.
+     * Retrieves the similarity score for a resume and stores it in the database.
+     * If the resume is associated with a job, it will update the job association.
      *
      * @param hash The unique identifier returned from the upload endpoint
      * @return ResponseEntity containing the similarity analysis results
      */
     @GetMapping("/score/{hash}")
-    public ResponseEntity<SimilarityScoreResponse> getSimilarityScore(@PathVariable String hash) {
-        return ResponseEntity.ok(
-                resumeClientService.getSimilarityScore(hash)
-                        .block()
-        );
-    }
-    
-    /**
-     * Retrieves and stores the similarity score for a resume submitted for a specific job
-     *
-     * @param hash The resume hash identifier
-     * @param accessKey The access key of the job the resume was submitted for
-     * @return ResponseEntity containing the similarity analysis results
-     */
-    @GetMapping("/score/{hash}/job/{accessKey}")
-    public ResponseEntity<?> getSimilarityScoreForJob(
-            @PathVariable String hash,
-            @PathVariable String accessKey) {
-        
-        // Get current user
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        UserEntity currentUser = (UserEntity) auth.getPrincipal();
-        Long userId = currentUser.getId();
-        
-        // Find job by access key
-        Job job = jobService.getByAccessKey(accessKey);
-        if (job == null) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "error", "Job not found with access key: " + accessKey
-            ));
-        }
-        
+    public ResponseEntity<?> getSimilarityScore(@PathVariable String hash) {
         // Get score from microservice
         SimilarityScoreResponse response = resumeClientService.getSimilarityScore(hash).block();
         
-        // Store in database if successful
-        if (response != null && response.getResult() != null) {
-            resumeDataService.saveResumeData(
-                hash,
-                response.getResult().toString(),
-                job.getId(),
-                userId
-            );
+        // Try to find resume in database to associate with job
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated()) {
+            UserEntity currentUser = (UserEntity) auth.getPrincipal();
+            Long userId = currentUser.getId();
+            
+            // Check if we have this resume stored
+            Optional<Resume> resumeOpt = resumeDataService.getResumeByHash(hash);
+            if (resumeOpt.isPresent() && response != null && response.getResult() != null) {
+                Resume resume = resumeOpt.get();
+                Job job = resume.getJob();
+                
+                // Update the resume data with results
+                resumeDataService.saveResumeData(
+                    hash,
+                    response.getResult().toString(),
+                    job.getId(),
+                    userId
+                );
+            }
         }
         
         return ResponseEntity.ok(response);
