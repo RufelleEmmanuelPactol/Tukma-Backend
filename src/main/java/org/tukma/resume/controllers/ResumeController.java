@@ -26,6 +26,7 @@ import org.tukma.resume.services.ResumeClientService;
 import org.tukma.resume.services.ResumeDataService;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -183,12 +184,47 @@ public ResumeController(ResumeClientService resumeClientService, ResumeDataServi
     /**
      * Get all resumes submitted for a specific job
      *
-     * @param jobId The job ID
+     * @param accessKey The job access key
      * @return List of resumes with their results
      */
-    @GetMapping("/job/{jobId}")
-    public ResponseEntity<?> getResumesByJob(@PathVariable Long jobId) {
-        List<Resume> resumes = resumeDataService.getResumesByJob(jobId);
-        return ResponseEntity.ok(resumes);
+    @GetMapping("/job/{accessKey}")
+    public ResponseEntity<?> getResumesByJob(@PathVariable String accessKey) {
+        // Find job by access key
+        Job job = jobService.getByAccessKey(accessKey);
+        if (job == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "error", "Job not found with access key: " + accessKey
+            ));
+        }
+        
+        // Check if the current user is the owner of the job
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated()) {
+            UserEntity currentUser = (UserEntity) auth.getPrincipal();
+            if (!job.getOwner().getId().equals(currentUser.getId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                    "error", "You are not authorized to view resumes for this job"
+                ));
+            }
+            
+            List<Resume> resumes = resumeDataService.getResumesByJob(job.getId());
+            
+            // Convert resumes to a more frontend-friendly format with parsed results
+            List<Map<String, Object>> formattedResumes = resumes.stream().map(resume -> {
+                Map<String, Object> formatted = new HashMap<>();
+                formatted.put("resume", resume);
+                formatted.put("parsedResults", resumeDataService.parseResumeResults(resume));
+                return formatted;
+            }).collect(java.util.stream.Collectors.toList());
+            
+            return ResponseEntity.ok(Map.of(
+                "job", job,
+                "resumes", formattedResumes
+            ));
+        }
+        
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+            "error", "You must be logged in to view resumes"
+        ));
     }
 }
