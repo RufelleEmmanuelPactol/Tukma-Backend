@@ -30,7 +30,7 @@ Multipart form data:
 POST /api/v1/resume/upload-for-job/{accessKey}
 ```
 
-Upload a resume file for a specific job application. This endpoint associates the resume with the job and the current user.
+Upload a resume file for a specific job application. This endpoint associates the resume with the job and the current user. The keywords for analysis are automatically extracted from the job, so you don't need to provide them.
 
 **Parameters:**
 - `accessKey`: The access key of the job being applied for
@@ -38,7 +38,6 @@ Upload a resume file for a specific job application. This endpoint associates th
 **Request Body:**
 Multipart form data:
 - `resume`: PDF file (required)
-- `keywords`: List of keywords (required, at least one keyword)
 
 **Response (Success - 200 OK):**
 ```json
@@ -51,6 +50,12 @@ Multipart form data:
 ```json
 {
   "error": "Job not found with access key: invalid-key"
+}
+```
+
+```json
+{
+  "error": "This job has no keywords defined for resume matching"
 }
 ```
 
@@ -545,6 +550,10 @@ The similarity scoring system compares resume text against provided keywords usi
 
 ## Field Requirements
 
-### Upload Resume
+### Upload Resume (General)
 - `resume`: Required - PDF file of the resume
 - `keywords`: Required - At least one keyword for comparison
+
+### Upload Resume for Job Application
+- `resume`: Required - PDF file of the resume
+- `keywords`: Not required - Keywords are automatically extracted from the job
