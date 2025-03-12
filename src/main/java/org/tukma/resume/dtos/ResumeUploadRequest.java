@@ -12,6 +12,9 @@ public class ResumeUploadRequest {
     @NotNull(message = "Resume file is required")
     private MultipartFile resume;
 
-    @NotEmpty(message = "At least one keyword is required")
+    /**
+     * Keywords are optional for job-specific uploads where keywords are extracted from the job.
+     * They are required for general uploads without a job reference.
+     */
     private List<String> keywords;
 }
