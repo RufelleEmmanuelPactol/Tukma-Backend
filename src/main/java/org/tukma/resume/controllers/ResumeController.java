@@ -399,4 +399,17 @@ public class ResumeController {
             ));
         }
     }
+    
+    /**
+     * Helper endpoint to clean up duplicate resumes that have the same job_id and owner_id
+     * This endpoint is not secured by authentication and is intended for maintenance purposes
+     * Keeps only the resume with the highest ID for each unique job-owner pair
+     *
+     * @return ResponseEntity containing statistics about the cleanup operation
+     */
+    @GetMapping("/cleanup-duplicates")
+    public ResponseEntity<?> cleanupDuplicateResumes() {
+        Map<String, Object> result = resumeDataService.cleanupDuplicateResumes();
+        return ResponseEntity.ok(result);
+    }
 }

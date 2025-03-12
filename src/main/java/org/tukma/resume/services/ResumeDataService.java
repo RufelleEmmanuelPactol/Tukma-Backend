@@ -10,6 +10,8 @@ import org.tukma.resume.models.Resume;
 import org.tukma.resume.repositories.ResumeRepository;
 import org.tukma.resume.utils.ResumeResultParser;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -150,5 +152,66 @@ public class ResumeDataService {
      */
     public Optional<Resume> getResumeByJobAndUser(Long jobId, Long userId) {
         return resumeRepository.findByJob_IdAndOwner_Id(jobId, userId);
+    }
+    
+    /**
+     * Removes duplicate resumes for the same job and owner combinations
+     * Keeps only the resume with the highest ID for each unique job-owner pair
+     * 
+     * @return A map containing statistics about the cleanup operation
+     */
+    public Map<String, Object> cleanupDuplicateResumes() {
+        Map<String, Object> result = new HashMap<>();
+        int totalDuplicatesRemoved = 0;
+        List<Object[]> duplicateCombinations = new ArrayList<>();
+        
+        // Get all resumes from the database
+        List<Resume> allResumes = resumeRepository.findAll();
+        
+        // Group resumes by job_id and owner_id combination
+        Map<String, List<Resume>> groupedResumes = new HashMap<>();
+        
+        for (Resume resume : allResumes) {
+            String key = resume.getJob().getId() + "-" + resume.getOwner().getId();
+            groupedResumes.computeIfAbsent(key, k -> new ArrayList<>()).add(resume);
+        }
+        
+        // Identify and collect resumes to delete (keeping the one with highest ID for each group)
+        List<Resume> resumesToDelete = new ArrayList<>();
+        
+        for (Map.Entry<String, List<Resume>> entry : groupedResumes.entrySet()) {
+            List<Resume> group = entry.getValue();
+            if (group.size() > 1) {
+                // Sort by ID in descending order
+                group.sort((r1, r2) -> Long.compare(r2.getId(), r1.getId()));
+                
+                // Keep the first one (highest ID), delete the rest
+                List<Resume> duplicates = group.subList(1, group.size());
+                resumesToDelete.addAll(duplicates);
+                
+                // Record for statistics
+                String[] parts = entry.getKey().split("-");
+                duplicateCombinations.add(new Object[]{
+                    Long.parseLong(parts[0]), // jobId
+                    Long.parseLong(parts[1]), // ownerId
+                    duplicates.size() // number of duplicates
+                });
+                
+                totalDuplicatesRemoved += duplicates.size();
+            }
+        }
+        
+        // Delete the identified duplicates
+        if (!resumesToDelete.isEmpty()) {
+            resumeRepository.deleteAll(resumesToDelete);
+        }
+        
+        // Prepare result statistics
+        result.put("totalResumesProcessed", allResumes.size());
+        result.put("totalDuplicatesRemoved", totalDuplicatesRemoved);
+        result.put("uniqueCombinationsWithDuplicates", duplicateCombinations.size());
+        result.put("duplicateCombinations", duplicateCombinations);
+        
+        return result;
     }
 }
