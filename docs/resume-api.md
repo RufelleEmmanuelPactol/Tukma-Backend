@@ -537,6 +537,34 @@ Get a specific applicant's resume for a job. This endpoint is only accessible to
 - `403 Forbidden`: If the authenticated user is not the owner of the job or is not a recruiter
 - `401 Unauthorized`: If the request is not authenticated
 
+### Cleanup Duplicate Resumes
+
+```
+GET /api/v1/resume/cleanup-duplicates
+```
+
+Cleans up duplicate resumes that have the same job and owner combinations by keeping only the resume with the highest ID for each unique job-owner pair. This endpoint is primarily for maintenance purposes and does not require authentication.
+
+**Response (Success - 200 OK):**
+```json
+{
+  "totalResumesProcessed": 120,
+  "totalDuplicatesRemoved": 15,
+  "uniqueCombinationsWithDuplicates": 8,
+  "duplicateCombinations": [
+    [101, 53, 2],   // [jobId, ownerId, numberOfDuplicatesRemoved]
+    [102, 54, 1],
+    [105, 53, 3]
+  ]
+}
+```
+
+**Response Fields:**
+- `totalResumesProcessed`: Total number of resumes examined in the database
+- `totalDuplicatesRemoved`: Total number of duplicate resumes removed
+- `uniqueCombinationsWithDuplicates`: Number of job-owner combinations that had duplicates
+- `duplicateCombinations`: Array of arrays containing [jobId, ownerId, numberOfDuplicates] for combinations that had duplicates
+
 ## Internal Processing
 
 The Resume API utilizes the following internal processing flow:
