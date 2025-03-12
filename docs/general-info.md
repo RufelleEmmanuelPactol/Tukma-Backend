@@ -11,6 +11,7 @@ Most API endpoints require authentication using the JWT token provided during lo
 - Job search endpoint (`/api/v1/jobs/search`)
 - Job details (`/api/v1/jobs/get-job-details/{accessKey}`)
 - Job metadata (`/api/v1/jobs/job-metadata`)
+- Resume duplicates cleanup (`/api/v1/resume/cleanup-duplicates`)
 - Debug endpoints (`/debug/**`)
 - WebSocket endpoints (`/ws/**`)
 

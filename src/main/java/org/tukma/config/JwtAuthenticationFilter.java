@@ -33,6 +33,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/api/v1/jobs/get-job-details/**",
             "/api/v1/jobs/job-metadata",
             "/api/v1/jobs/search",
+            "/api/v1/resume/cleanup-duplicates",
             "/debug/**",
             "/ws/**"
     );
@@ -85,10 +86,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private String extractToken(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
-
-        for (Cookie cookie : cookies) {
-            if (cookie.getName().equals("jwt")) {
-                return cookie.getValue();
+        
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (cookie.getName().equals("jwt")) {
+                    return cookie.getValue();
+                }
             }
         }
 

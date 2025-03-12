@@ -10,6 +10,11 @@ The Tukma application provides a platform for:
 - AI-powered resume analysis to match applicants with job requirements
 - Automated interviewing capabilities
 
+### Maintenance Tools
+
+The application includes maintenance endpoints for database management:
+- Resume duplicate cleanup: `/api/v1/resume/cleanup-duplicates` - Removes duplicate resume entries while preserving the most recent version
+
 ## API Documentation
 
 The API is organized into several logical sections:
