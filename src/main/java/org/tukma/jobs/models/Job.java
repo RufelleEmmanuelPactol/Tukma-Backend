@@ -5,8 +5,10 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import org.tukma.auth.models.UserEntity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Getter
@@ -66,6 +68,10 @@ public class Job {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+    
+    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<Question> questions;
     
     public enum JobType {
         FULL_TIME,
