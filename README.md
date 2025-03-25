@@ -21,6 +21,7 @@ The API is organized into several logical sections:
 
 - [Authentication API](docs/auth-api.md) - User registration, login, and status
 - [Jobs API](docs/jobs-api.md) - Job creation, management, search, and retrieval
+- [Questions API](docs/questions-api.md) - Interview question management for jobs
 - [Resume API](docs/resume-api.md) - Resume uploads, analysis, and retrieval
 - [Interviewer API](docs/interviewer-api.md) - Real-time interviewing via WebSockets
 - [General Information](docs/general-info.md) - Authentication, models, and common patterns
