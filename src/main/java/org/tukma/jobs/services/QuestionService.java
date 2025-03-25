@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.tukma.jobs.models.Job;
 import org.tukma.jobs.models.Question;
+import org.tukma.jobs.models.Question.QuestionType;
 import org.tukma.jobs.repositories.QuestionRepository;
 
 import java.util.ArrayList;
@@ -44,13 +45,15 @@ public class QuestionService {
      * Add a new question to a job
      * @param job Job entity
      * @param questionText Question text
+     * @param type Question type (TECHNICAL or BEHAVIORAL)
      * @return Created question
      */
     @Transactional
-    public Question addQuestion(Job job, String questionText) {
+    public Question addQuestion(Job job, String questionText, QuestionType type) {
         Question question = new Question();
         question.setJob(job);
         question.setQuestionText(questionText.trim());
+        question.setType(type);
         return questionRepository.save(question);
     }
     
@@ -58,10 +61,11 @@ public class QuestionService {
      * Add multiple questions to a job
      * @param job Job entity
      * @param questionTexts List of question texts
+     * @param type Question type (TECHNICAL or BEHAVIORAL)
      * @return List of created questions
      */
     @Transactional
-    public List<Question> addQuestions(Job job, List<String> questionTexts) {
+    public List<Question> addQuestions(Job job, List<String> questionTexts, QuestionType type) {
         List<Question> questions = new ArrayList<>();
         
         for (String questionText : questionTexts) {
@@ -69,6 +73,7 @@ public class QuestionService {
                 Question question = new Question();
                 question.setJob(job);
                 question.setQuestionText(questionText.trim());
+                question.setType(type);
                 questions.add(question);
             }
         }
@@ -83,14 +88,16 @@ public class QuestionService {
      * Update an existing question
      * @param questionId Question ID
      * @param questionText New question text
+     * @param type Question type (TECHNICAL or BEHAVIORAL)
      * @return Updated question
      */
     @Transactional
-    public Question updateQuestion(Long questionId, String questionText) {
+    public Question updateQuestion(Long questionId, String questionText, QuestionType type) {
         Optional<Question> questionOpt = questionRepository.findById(questionId);
         if (questionOpt.isPresent()) {
             Question question = questionOpt.get();
             question.setQuestionText(questionText.trim());
+            question.setType(type);
             return questionRepository.save(question);
         }
         return null;

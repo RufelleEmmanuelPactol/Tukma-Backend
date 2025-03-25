@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.tukma.auth.models.UserEntity;
 import org.tukma.jobs.models.Job;
 import org.tukma.jobs.models.Question;
+import org.tukma.jobs.models.Question.QuestionType;
 import org.tukma.jobs.services.JobService;
 import org.tukma.jobs.services.QuestionService;
 
@@ -65,11 +66,11 @@ public class QuestionController {
     /**
      * Add a new question to a job
      * @param accessKey Job access key
-     * @param questionText Question text in the request body
+     * @param request Request containing question text and type
      * @return Created question
      */
     @PostMapping("/{accessKey}")
-    public ResponseEntity<?> addQuestion(@PathVariable String accessKey, @RequestBody Map<String, String> request) {
+    public ResponseEntity<?> addQuestion(@PathVariable String accessKey, @RequestBody Map<String, Object> request) {
         Job job = jobService.getByAccessKey(accessKey);
         if (job == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -83,26 +84,41 @@ public class QuestionController {
                     .body(Map.of("message", "You are not authorized to modify this job"));
         }
 
-        String questionText = request.get("questionText");
+        String questionText = (String) request.get("questionText");
         if (questionText == null || questionText.trim().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", "Question text is required"));
         }
+        
+        // Parse question type
+        String typeStr = (String) request.get("type");
+        if (typeStr == null || typeStr.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Question type is required"));
+        }
+        
+        QuestionType questionType;
+        try {
+            questionType = QuestionType.valueOf(typeStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Invalid question type. Must be TECHNICAL or BEHAVIORAL"));
+        }
 
-        Question question = questionService.addQuestion(job, questionText);
+        Question question = questionService.addQuestion(job, questionText, questionType);
         return ResponseEntity.status(HttpStatus.CREATED).body(question);
     }
     
     /**
      * Add multiple questions to a job
      * @param accessKey Job access key
-     * @param request List of questions in the request body
+     * @param request Request containing list of questions and type
      * @return Created questions
      */
     @PostMapping("/{accessKey}/batch")
     public ResponseEntity<?> addQuestions(
             @PathVariable String accessKey,
-            @RequestBody Map<String, List<String>> request) {
+            @RequestBody Map<String, Object> request) {
         
         Job job = jobService.getByAccessKey(accessKey);
         if (job == null) {
@@ -117,27 +133,43 @@ public class QuestionController {
                     .body(Map.of("message", "You are not authorized to modify this job"));
         }
 
-        List<String> questionTexts = request.get("questions");
+        List<String> questionTexts = (List<String>) request.get("questions");
         if (questionTexts == null || questionTexts.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", "At least one question is required"));
         }
+        
+        // Parse question type
+        String typeStr = (String) request.get("type");
+        if (typeStr == null || typeStr.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Question type is required"));
+        }
+        
+        QuestionType questionType;
+        try {
+            questionType = QuestionType.valueOf(typeStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Invalid question type. Must be TECHNICAL or BEHAVIORAL"));
+        }
 
-        List<Question> questions = questionService.addQuestions(job, questionTexts);
+        List<Question> questions = questionService.addQuestions(job, questionTexts, questionType);
         return ResponseEntity.status(HttpStatus.CREATED).body(questions);
     }
 
     /**
      * Update an existing question
+     * @param accessKey Job access key
      * @param questionId Question ID
-     * @param request Request body with updated question text
+     * @param request Request with updated question text and type
      * @return Updated question
      */
     @PutMapping("/{accessKey}/{questionId}")
     public ResponseEntity<?> updateQuestion(
             @PathVariable String accessKey,
             @PathVariable Long questionId,
-            @RequestBody Map<String, String> request) {
+            @RequestBody Map<String, Object> request) {
         
         Job job = jobService.getByAccessKey(accessKey);
         if (job == null) {
@@ -152,7 +184,7 @@ public class QuestionController {
                     .body(Map.of("message", "You are not authorized to modify this job"));
         }
 
-        String questionText = request.get("questionText");
+        String questionText = (String) request.get("questionText");
         if (questionText == null || questionText.trim().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", "Question text is required"));
@@ -169,8 +201,23 @@ public class QuestionController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", "Question does not belong to this job"));
         }
+        
+        // Parse question type
+        String typeStr = (String) request.get("type");
+        if (typeStr == null || typeStr.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Question type is required"));
+        }
+        
+        QuestionType questionType;
+        try {
+            questionType = QuestionType.valueOf(typeStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Invalid question type. Must be TECHNICAL or BEHAVIORAL"));
+        }
 
-        question = questionService.updateQuestion(questionId, questionText);
+        question = questionService.updateQuestion(questionId, questionText, questionType);
         return ResponseEntity.ok(question);
     }
 
