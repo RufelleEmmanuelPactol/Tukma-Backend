@@ -5,6 +5,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.tukma.auth.models.UserEntity;
 import org.tukma.jobs.dtos.JobCreateRequest;
 import org.tukma.jobs.dtos.JobEditRequest;
@@ -131,11 +132,43 @@ public class JobService {
 
     }
 
+    /**
+     * Deletes a job and all its associated keywords
+     * Uses @Transactional to ensure that all operations complete as a single unit
+     *
+     * @param job The job to delete
+     */
+    @Transactional
     public void deleteJob(Job job) {
+        if (job == null) {
+            return;
+        }
+        
+        // First, delete all associated keywords
+        List<Keyword> keywords = keywordRepository.findByKeywordOwner(job);
+        if (!keywords.isEmpty()) {
+            keywordRepository.deleteAll(keywords);
+        }
+        
+        // Then delete the job
         jobRepository.deleteById(job.getId());
     }
 
+    /**
+     * Deletes a job by ID and all its associated keywords
+     * Uses @Transactional to ensure that all operations complete as a single unit
+     *
+     * @param id The ID of the job to delete
+     */
+    @Transactional
     public void deleteJob(Long id) {
+        // First, delete all associated keywords
+        List<Keyword> keywords = keywordRepository.findByKeywordOwner_Id(id);
+        if (!keywords.isEmpty()) {
+            keywordRepository.deleteAll(keywords);
+        }
+        
+        // Then delete the job
         jobRepository.deleteById(id);
     }
 
@@ -256,6 +289,7 @@ public class JobService {
      * @return Updated job entity
      * @throws IllegalArgumentException if user is not authorized to edit the job
      */
+    @Transactional
     public Job updateJob(Job job, JobEditRequest request, UserEntity currentUser) {
         // Verify ownership
         if (!job.getOwner().getId().equals(currentUser.getId())) {
@@ -280,8 +314,8 @@ public class JobService {
             List<Keyword> existingKeywords = keywordRepository.findByKeywordOwner(job);
             
             // Remove existing keywords
-            for (Keyword keyword : existingKeywords) {
-                keywordRepository.delete(keyword);
+            if (!existingKeywords.isEmpty()) {
+                keywordRepository.deleteAll(existingKeywords);
             }
             
             // Add new keywords
