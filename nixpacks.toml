@@ -1,4 +1,4 @@
 # nixpacks.toml
 
 [start]
-cmd = "gunicorn main:app"
+cmd = "gunicorn -w 17 main:app"
