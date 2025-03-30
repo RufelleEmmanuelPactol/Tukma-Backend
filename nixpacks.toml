@@ -1,12 +1,17 @@
 [phases.setup]
   nixPkgs = ["python311Packages.flask", "python311Packages.gunicorn", "nginx"]
 
+[phases.install]
+  cmds = ["pip install -r requirements.txt"]
+
+[phases.build]
+  cmds = ["echo 'Starting build phase (optional)'"]
 
 [phases.runtime]
   cmds = [
     "mkdir -p /var/log/nginx /run/nginx /tmp", # Ensure directories exist
     "cp -f nginx.conf /etc/nginx/nginx.conf",  # Copy nginx config
-    "gunicorn --bind unix:/tmp/gunicorn.sock --workers 17 --threads 2 app:app &",
+    "gunicorn --bind unix:/tmp/gunicorn.sock --workers 17 --threads 2 wsgi:app &",
     "nginx -g 'daemon off;' &",
     "while true; do sleep 1; done"
   ]
