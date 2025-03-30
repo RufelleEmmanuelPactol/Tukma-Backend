@@ -1,27 +1,57 @@
+# nixpacks.toml
+
+# Define providers needed. Nixpacks usually auto-detects Python.
+# We explicitly request Nginx.
+[providers]
+# python = "3.11" # Optional: Uncomment and set specific Python version if needed
+nginx = ""
+
+# Install necessary system packages.
+# We need 'gettext' for the 'envsubst' command used to process the Nginx template.
+# Nginx is installed by the provider above. Python is usually handled automatically.
 [phases.setup]
-  nixPkgs = ["python311Packages.flask", "python311Packages.gunicorn", "nginx"]
+nixPkgs = ["pkgs.gettext"]
+# Or if using an apt-based image (less common with default Nixpacks):
+# aptPkgs = ["gettext-base"]
 
-[phases.install]
-  cmds = ["pip install -r requirements.txt"]
+# Nixpacks automatically handles Python dependency installation based on
+# requirements.txt, pyproject.toml (poetry/pdm), etc.
+# Ensure 'gunicorn' is listed in your Python dependencies.
+# [phases.install]
+# cmds = ["pip install -r requirements.txt"] # Example if auto-detection fails
 
-[phases.build]
-  cmds = ["echo 'Starting build phase (optional)'"]
+# Optional build phase (e.g., collecting static files if needed)
+# [phases.build]
+# cmds = ["python manage.py collectstatic --noinput"]
 
-[phases.runtime]
-  cmds = [
-    "mkdir -p /var/log/nginx /run/nginx /tmp", # Ensure directories exist
-    "cp -f nginx.conf /etc/nginx/nginx.conf",  # Copy nginx config
-    "gunicorn --bind unix:/tmp/gunicorn.sock --workers 17 --threads 2 wsgi:app &",
-    "nginx -g 'daemon off;' &",
-    "while true; do sleep 1; done"
-  ]
+# Define the start command for the application.
+# This command does several things:
+# 1. Calculates a default number of Gunicorn workers based on CPU cores.
+# 2. Uses 'envsubst' to substitute the $PORT variable into the Nginx template.
+# 3. Starts Gunicorn in the background, binding to a Unix socket.
+# 4. Starts Nginx in the foreground, using the generated config file.
+[start]
+cmd = """
+# Set default Gunicorn workers based on CPU count (common practice), allow override via env var
+export GUNICORN_WORKERS=${GUNICORN_WORKERS:-$(($(nproc --all)*2+1))} && \
+echo "INFO: Preparing Nginx config..." && \
+# Substitute $PORT (provided by the environment) into the template
+# Use /tmp as it's generally writable in containers
+envsubst '$PORT' < /app/nginx.conf.template > /tmp/nginx.conf && \
+echo "INFO: Starting Gunicorn with $GUNICORN_WORKERS workers..." && \
+# Start Gunicorn binding to a Unix socket (replace 'your_module:app_variable')
+gunicorn \
+  --workers $GUNICORN_WORKERS \
+  --bind unix:/tmp/gunicorn.sock \
+  your_module:app_variable & \
+# Wait briefly for socket to potentially be created (optional, usually not needed)
+# sleep 0.1 && \
+echo "INFO: Starting Nginx..." && \
+# Start Nginx in the foreground using the generated config
+nginx -c /tmp/nginx.conf -g 'daemon off;'
+"""
 
-port = 80
-
-healthcheckPath = "/health"
-
-[environment]
-  FLASK_APP = "wsgi.py"
-  FLASK_ENV = "production"
-  GUNICORN_ACCESS_LOG = "/var/log/nginx/access.log"
-  GUNICORN_ERROR_LOG = "/var/log/nginx/error.log"
+# Optional: Expose the port Nginx will listen on.
+# Nixpacks often detects this from $PORT, but being explicit can help.
+# [ports]
+# "8080" = "HTTP" # Default Nixpacks port if $PORT is not set

@@ -1,0 +1,69 @@
+# nginx.conf.template
+
+# Minimal config needed by Nginx
+events {}
+
+http {
+  # Hide Nginx version numbers
+  server_tokens off;
+
+  # Define the upstream application server (Gunicorn)
+  upstream flask_backend {
+    # Match the socket path used in the gunicorn --bind command
+    server unix:/tmp/gunicorn.sock fail_timeout=0;
+  }
+
+  # Define the main server block
+  server {
+    # Listen on the port provided by the environment variable $PORT.
+    # Nginx itself doesn't evaluate env vars directly in 'listen',
+    # but 'envsubst' in the start command will replace ${PORT}.
+    # The :-8080 provides a default if $PORT is somehow unset (useful for local testing).
+    listen ${PORT:-8080};
+
+    # Match any hostname
+    server_name _;
+
+    # Root location - proxy all requests to the upstream Gunicorn server
+    location / {
+      # Proxy settings
+      proxy_set_header Host $host;
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme; # Important for detecting https
+
+      # Pass the request to the upstream
+      proxy_pass http://flask_backend;
+
+      # Increase timeouts if you have long-running requests
+      proxy_read_timeout 600s;
+      proxy_connect_timeout 75s;
+
+      # Optional: Buffer settings (adjust if needed)
+      # proxy_buffering on;
+      # proxy_buffers 8 16k;
+      # proxy_buffer_size 32k;
+    }
+
+    # Optional: Add location blocks for serving static files directly via Nginx
+    # if you configure Flask/Gunicorn not to serve them in production.
+    # Make sure the path `/app/static/` matches where your static files
+    # end up in the container (e.g., after a `collectstatic` step).
+    # location /static/ {
+    #   alias /app/static/; # Adjust this path as necessary
+    #   expires 1d;        # Cache static files for 1 day
+    #   access_log off;    # Optional: disable logging for static files
+    # }
+
+    # Optional: Add a health check endpoint that Nginx can serve directly
+    # location /healthz {
+    #   access_log off;
+    #   return 200 "OK";
+    #   # Add header to prevent caching
+    #   add_header Content-Type text/plain;
+    # }
+
+    # Client settings
+    client_max_body_size 10M; # Adjust max upload size if needed
+  }
+}
