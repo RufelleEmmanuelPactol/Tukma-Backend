@@ -1,4 +1,16 @@
-# nixpacks.toml
+[providers]
+python = { version = "3.11" }
+nginx = { version = "stable" }
+
+[config.files]
+"nginx.conf" = "/etc/nginx/nginx.conf"
+"start.sh" = "/app/start.sh"
+
+[phases.build]
+commands = [
+    "pip install -r requirements.txt",
+    "chmod +x /app/start.sh",
+]
 
 [start]
-cmd = "gunicorn -w 17 main:app"
+command = "/app/start.sh"
