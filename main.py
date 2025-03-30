@@ -1,11 +1,10 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from datetime import datetime
 from openai import OpenAI
 from pathlib import Path
-from io import BytesIO
 from dotenv import load_dotenv
-import sqlite3, os, io, json
+import sqlite3, os
 
 load_dotenv()
 
