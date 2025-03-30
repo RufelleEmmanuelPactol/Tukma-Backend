@@ -14,10 +14,8 @@ cmds = [
 ]
 
 [start]
-cmds = [
-  "gunicorn -w 17 -b 0.0.0.0:8000 app:app &",
-  "nginx -g 'daemon off;'"
-]
+cmd = "gunicorn -w 4 -b 0.0.0.0:8000 app:app & nginx -g 'daemon off;'"
+
 
 [variables]
 PORT = "8000"
