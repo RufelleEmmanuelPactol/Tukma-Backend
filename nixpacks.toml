@@ -1,20 +1,29 @@
-[[providers]]
-name = "python"
-version = "3.11"
+# nixpacks.toml
 
-[[providers]]
-name = "nginx"
-version = "stable"
+# Specify Python as the primary provider (optional, Nixpacks usually detects it)
+providers = ["python"]
 
-[config.files]
-"nginx.conf" = "/etc/nginx/nginx.conf"
-"start.sh" = "/app/start.sh"
+[phases.setup]
+# Install necessary system packages: Nginx and Supervisor
+# This assumes a Debian/Ubuntu base image, which is common for Nixpacks.
+# If using a Nix-based environment, use nixPkgs instead.
+aptPkgs = ["nginx", "supervisor"]
 
-[phases.build]
-commands = [
-    "pip install -r requirements.txt",
-    "chmod +x /app/start.sh",
-]
+[phases.install]
+# Nixpacks automatically detects requirements.txt and installs dependencies.
+# Ensure 'flask' and 'gunicorn' are listed in your requirements.txt.
+# If auto-detection fails or you need specific versions, you can add:
+# cmds = ["pip install --upgrade pip", "pip install -r requirements.txt"]
+
+# [phases.build]
+# Add any custom build steps here if your app requires them
+# (e.g., collecting static files, compiling assets)
+# Example:
+# cmds = ["python manage.py collectstatic --noinput"]
 
 [start]
-command = "/app/start.sh"
+# Define the command to start the application container.
+# We use supervisord to run and manage both Nginx and Gunicorn.
+# The '-n' flag tells supervisord to stay in the foreground.
+# Assumes supervisord.conf is in the project root and copied to /app by Nixpacks.
+cmd = "supervisord -n -c /app/supervisord.conf"
