@@ -1,6 +1,10 @@
-[providers]
-python = { version = "3.11" }
-nginx = { version = "stable" }
+[[providers]]
+name = "python"
+version = "3.11"
+
+[[providers]]
+name = "nginx"
+version = "stable"
 
 [config.files]
 "nginx.conf" = "/etc/nginx/nginx.conf"
