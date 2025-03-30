@@ -7,12 +7,6 @@ aptPkgs = ["nginx", "supervisor"]
 # If using a Nix based environment, replace aptPkgs with:
 # nixPkgs = ["...", "nginx", "supervisor"]
 
-[phases.install]
-# Explicitly install dependencies using pip
-# This ensures gunicorn (if listed in requirements.txt) gets installed
-cmds = [
-    "pip install -r requirements.txt"
-]
 
 # [phases.build]
 # cmds = ["echo 'No build steps required'"]
