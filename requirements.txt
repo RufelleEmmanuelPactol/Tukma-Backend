@@ -1,0 +1,6 @@
+flask
+flask-socketio
+openai
+python-dotenv
+pathlib
+gunicorn
