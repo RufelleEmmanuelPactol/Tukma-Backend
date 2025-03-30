@@ -1,10 +1,19 @@
 # nixpacks.toml
+# Corrected version
 
-# Define providers needed. Nixpacks usually auto-detects Python.
-# We explicitly request Nginx.
-[providers]
-# python = "3.11" # Optional: Uncomment and set specific Python version if needed
-nginx = ""
+# Define providers needed as an array (sequence).
+# Nixpacks usually auto-detects Python.
+providers = ["nginx"] # Or ["python", "nginx"] if you want to be explicit about python
+
+# Optional: If you need a *specific* Python version, create a .python-version file
+# in your project root with just the version number (e.g., "3.11"),
+# or configure it if the python provider allows version specification differently.
+# Example if using a table was supported AND you needed a specific version:
+# [providers]
+# python = "3.11"
+# nginx = ""
+# BUT the error indicates an array is needed, so use the format above.
+
 
 # Install necessary system packages.
 # We need 'gettext' for the 'envsubst' command used to process the Nginx template.
