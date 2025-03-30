@@ -13,7 +13,7 @@ app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 client = OpenAI(
     # This is the default and can be omitted
-    api_key=env("OPENAI_API_KEY"),
+    api_key=os.environ.get("OPENAI_API_KEY"),
 )
 CHUNK_SIZE = 4096
 audio_buffers = {}
