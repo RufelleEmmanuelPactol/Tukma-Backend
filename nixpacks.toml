@@ -1,16 +1,22 @@
-# nixpacks.toml
-
-providers = ["python"]
-
 [phases.setup]
-aptPkgs = ["nginx", "supervisor"]
-# If using a Nix based environment, replace aptPkgs with:
-# nixPkgs = ["...", "nginx", "supervisor"]
+  nixPkgs = ["python311Packages.flask", "python311Packages.gunicorn", "nginx"]
 
 
-# [phases.build]
-# cmds = ["echo 'No build steps required'"]
+[phases.runtime]
+  cmds = [
+    "mkdir -p /var/log/nginx /run/nginx /tmp", # Ensure directories exist
+    "cp -f nginx.conf /etc/nginx/nginx.conf",  # Copy nginx config
+    "gunicorn --bind unix:/tmp/gunicorn.sock --workers 17 --threads 2 app:app &",
+    "nginx -g 'daemon off;' &",
+    "while true; do sleep 1; done"
+  ]
 
-[start]
-# Use supervisor.conf (matching your filename)
-cmd = "supervisord -n -c /app/supervisor.conf"
+port = 80
+
+healthcheckPath = "/health"
+
+[environment]
+  FLASK_APP = "wsgi.py"
+  FLASK_ENV = "production"
+  GUNICORN_ACCESS_LOG = "/var/log/nginx/access.log"
+  GUNICORN_ERROR_LOG = "/var/log/nginx/error.log"
