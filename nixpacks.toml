@@ -11,7 +11,6 @@ aptPkgs = ["nginx", "supervisor"]
 # Explicitly install dependencies using pip
 # This ensures gunicorn (if listed in requirements.txt) gets installed
 cmds = [
-    "pip install --upgrade pip",
     "pip install -r requirements.txt"
 ]
 
