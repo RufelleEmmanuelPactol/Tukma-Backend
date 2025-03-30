@@ -9,7 +9,7 @@ import sqlite3, os
 load_dotenv()
 
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins='*')
 client = OpenAI(
     # This is the default and can be omitted
     api_key=os.environ.get("OPENAI_API_KEY"),
@@ -450,4 +450,4 @@ def fetch_message(name, room):
 
 
 if __name__ == "__main__":
-    socketio.run(app)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
