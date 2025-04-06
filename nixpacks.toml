@@ -1,21 +1,7 @@
-[phases.setup]
-nixPkgs = ["nginx", "python310", "gunicorn"]
+# nixpacks.toml
 
-[phases.install]
-cmds = [
-  "pip install -r requirements.txt",
-  "mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled"
-]
-
-[phases.build]
-cmds = [
-  "cp nginx.conf /etc/nginx/sites-available/default",
-  "ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/"
-]
+[persist]
+paths = ["/app/data"]
 
 [start]
-cmd = "gunicorn -w 4 -b 0.0.0.0:8000 app:app & nginx -g 'daemon off;'"
-
-
-[variables]
-PORT = "8000"
+cmd = "gunicorn app:app"
