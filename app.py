@@ -103,4 +103,4 @@ def reply():
 
 if __name__ == "__main__":
     # Initialize the database when the app starts
-    socketio.run(app, debug=True)
+    app.run(debug=True)
