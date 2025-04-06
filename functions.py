@@ -1,12 +1,16 @@
 from flask import jsonify
 from datetime import datetime
 import sqlite3
+import os
 
 PROD_DB = "/app/data/messages.db"
 LOCAL_DB = "messages.db"
 DATABASE = PROD_DB # change depending on the environment
 
 def init_db():
+    db_dir = os.path.dirname(DATABASE)
+    os.makedirs(db_dir, exist_ok=True)
+
     conn = None # Initialize conn outside try for the finally block
     try:
         # Use a specific path for the database
