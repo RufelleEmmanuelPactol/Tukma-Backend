@@ -7,7 +7,6 @@ from functions import check_record, init_db, insert_msg, get_messages, get_histo
 load_dotenv()
 
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*")
 client = OpenAI(
     api_key=os.environ.get("OPENAI_API_KEY"),
 )
