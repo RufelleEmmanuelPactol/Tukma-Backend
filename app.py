@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
-from functions import check_record, init_db, insert_msg, get_messages, get_history, get_applicants
+from functions import check_record, init_db, insert_msg, get_messages, get_history, get_applicants, done_interviews, check_interview
 
 load_dotenv()
 
@@ -98,6 +98,18 @@ def reply():
         # Handle potential API errors
         print(f"Error calling OpenAI or processing reply: {e}") # Log error
         return jsonify({"error": "Failed to get response from AI"}), 500
+
+        
+@app.route("/finished_interviews/<access_key>", methods=["GET"])
+def finished_interviews(access_key):
+    finished_interviews = done_interviews(access_key)
+    return jsonify({"status": "success", "finished_interviews": finished_interviews })
+
+
+@app.route("/done_interview/<access_key>/<name>/<email>", methods=["GET"])
+def is_finished(access_key, name, email):
+    is_finished = check_interview(access_key, name, email)
+    return jsonify({"status": "success", "is_finished": is_finished })
 
     
 
