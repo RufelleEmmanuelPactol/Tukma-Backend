@@ -140,25 +140,29 @@ def get_applicants(access_key):
     
     
 def done_interviews(access_key):
-    finished_interview = []
     with sqlite3.connect(DATABASE) as conn:
         cursor = conn.cursor()
+        # If there is an additional indicator for a finished interview (e.g., is_final column), include it:
         cursor.execute(
             """
             SELECT DISTINCT name, email
             FROM messages 
-            WHERE content LIKE ? AND access_key = ?
+            WHERE content LIKE ?
+              AND access_key = ?
+              -- Uncomment the next line if you have an indicator for finished interviews
+              -- AND is_final = 1
             """,
             ('%Thank you for your time and insights%', access_key)
         )
-        finished_interview = cursor.fetchall()
-        formatted = [{"name": name, "email": email} for name, email in finished_interview]
+        finished_interviews = cursor.fetchall()
+        formatted = [{"name": name, "email": email} for name, email in finished_interviews]
     return formatted
 
     
 def check_interview(access_key, name, email):
     with sqlite3.connect(DATABASE) as conn:
         cursor = conn.cursor()
+        # Again, add any additional conditions if necessary.
         cursor.execute(
             """
             SELECT 1
@@ -167,11 +171,9 @@ def check_interview(access_key, name, email):
               AND access_key = ?
               AND name = ?
               AND email = ?
+              -- AND is_final = 1  -- Uncomment if you have this field
             LIMIT 1
             """,
             ('%Thank you for your time and insights%', access_key, name, email)
         )
-        result = cursor.fetchone()
-        if result:
-            return True
-    return False
+        return cursor.fetchone() is not None
