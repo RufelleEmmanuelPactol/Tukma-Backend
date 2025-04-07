@@ -1,7 +1,4 @@
 # nixpacks.toml
 
-[persist]
-paths = ["/app/data"]
-
 [start]
 cmd = "gunicorn app:app"
