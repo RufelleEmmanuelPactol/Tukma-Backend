@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
-from functions import check_record, init_db, insert_msg, get_messages, get_history, get_applicants, done_interviews, check_interview, debug
+from functions import check_record, init_db, insert_msg, get_messages, get_history, get_applicants, done_interviews, check_interview, debug, initial_msg
 
 load_dotenv()
 
@@ -32,7 +32,7 @@ def start_interview():
     if result != False:
         return result
     
-    insert_msg(prompt, access_key, "system", name, email)
+    initial_msg(prompt, access_key, "system", name, email)
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
