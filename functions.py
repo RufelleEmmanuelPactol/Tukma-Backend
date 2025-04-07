@@ -25,7 +25,8 @@ def init_db():
                     role TEXT NOT NULL,
                     access_key TEXT NOT NULL,
                     name TEXT NOT NULL,
-                    email TEXT NOT NULL -- Removed the trailing comma
+                    email TEXT NOT NULL,
+                    is_finished INTEGER NOT NULL
                 )
                 """
             )
@@ -39,14 +40,20 @@ def init_db():
 
 
 def insert_msg(content, access_key, role, name, email):
+    is_finished = 0
+    phrase = "Thank you for your time and insights"
+
+    if phrase.lower() in content.lower():
+        is_finished = 1
+
     with sqlite3.connect(DATABASE) as conn:
         cursor = conn.cursor()
         cursor.execute(
             """
-            INSERT INTO messages (content, date_created, role, access_key, name, email)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO messages (content, date_created, role, access_key, name, email, is_finished)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
-            (content, datetime.now(), role, access_key, name, email),
+            (content, datetime.now(), role, access_key, name, email, is_finished),
         )
         conn.commit()
 
@@ -140,16 +147,15 @@ def get_applicants(access_key):
     
     
 def done_interviews(access_key):
-    finished_interview = []
     with sqlite3.connect(DATABASE) as conn:
         cursor = conn.cursor()
         cursor.execute(
             """
             SELECT DISTINCT name, email
             FROM messages 
-            WHERE content LIKE ? COLLATE NOCASE AND access_key = ?
+            WHERE access_key = ? AND is_finished = 1
             """,
-            ('%Thank you for your time and insights%', access_key)
+            (access_key,)
         )
         finished_interview = cursor.fetchall()
         formatted = [{"name": name, "email": email} for name, email in finished_interview]
@@ -163,13 +169,13 @@ def check_interview(access_key, name, email):
             """
             SELECT 1
             FROM messages 
-            WHERE content LIKE ? COLLATE NOCASE
-              AND access_key = ?
+            WHERE access_key = ?
               AND name = ?
               AND email = ?
+              AND is_finished = 1
             LIMIT 1
             """,
-            ('%24 hours%', access_key, name, email)
+            (access_key, name, email)
         )
         result = cursor.fetchone()
-    return result
+    return result is not None  # True if the interview is marked as finished
