@@ -113,7 +113,7 @@ def is_finished(access_key, name, email):
 
     
 @app.route("/debug", methods=["GET"])
-def debug():
+def debug_route():
     result = debug()
     return jsonify({"result": result})
 
