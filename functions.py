@@ -169,9 +169,7 @@ def check_interview(access_key, name, email):
               AND email = ?
             LIMIT 1
             """,
-            ('%Thank you for your time and insights%', access_key, name, email)
+            ('%24 hours%', access_key, name, email)
         )
         result = cursor.fetchone()
-        if result:
-            return True
-    return False
+    return result
