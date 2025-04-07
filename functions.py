@@ -3,7 +3,7 @@ from datetime import datetime
 import sqlite3
 import os
 
-PROD_DB = "./app/tukma/messages.db"
+PROD_DB = "/app/tukma/messages.db"
 LOCAL_DB = "messages.db"
 DATABASE = PROD_DB # change depending on the environment
 
