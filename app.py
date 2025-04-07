@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
-from functions import check_record, init_db, insert_msg, get_messages, get_history, get_applicants, done_interviews, check_interview
+from functions import check_record, init_db, insert_msg, get_messages, get_history, get_applicants, done_interviews, check_interview, debug
 
 load_dotenv()
 
@@ -110,6 +110,12 @@ def finished_interviews(access_key):
 def is_finished(access_key, name, email):
     is_finished = check_interview(access_key, name, email)
     return jsonify({"status": "success", "is_finished": is_finished })
+
+    
+@app.route("/debug", methods=["GET"])
+def debug():
+    result = debug()
+    return jsonify({"result": result})
 
     
 
