@@ -3,7 +3,7 @@ from datetime import datetime
 import sqlite3
 import os
 
-PROD_DB = "/app/tukma/messages.db"
+PROD_DB = "./app/tukma/messages.db"
 LOCAL_DB = "messages.db"
 DATABASE = PROD_DB # change depending on the environment
 
@@ -179,3 +179,12 @@ def check_interview(access_key, name, email):
         )
         result = cursor.fetchone()
     return result is not None  # True if the interview is marked as finished
+
+
+def debug():
+    with sqlite3.connect(DATABASE) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM messages")
+        results = cursor.fetchall()  # Fetch all results
+        
+    return results  # Returns a list of all records in the messages table
