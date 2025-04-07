@@ -4,8 +4,8 @@ import sqlite3
 import os
 
 PROD_DB = "/app/tukma/messages.db"
-LOCAL_DB = "messages.db"
-DATABASE = PROD_DB # change depending on the environment
+LOCAL_DB = "./app/tukma/messages.db"
+DATABASE = PROD_DB 
 
 def init_db():
     db_dir = os.path.dirname(DATABASE)
@@ -57,6 +57,20 @@ def insert_msg(content, access_key, role, name, email):
         )
         conn.commit()
 
+
+def initial_msg(content, access_key, role, name, email):
+    with sqlite3.connect(DATABASE) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO messages (content, date_created, role, access_key, name, email, is_finished)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+            (content, datetime.now(), role, access_key, name, email, 0),
+        )
+        conn.commit()
+
+        
         
 def check_record(access_key, name, email):
     with sqlite3.connect(DATABASE) as conn:
