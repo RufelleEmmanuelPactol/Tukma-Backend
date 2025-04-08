@@ -34,7 +34,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/api/v1/jobs/job-metadata",
             "/api/v1/jobs/search",
             "/api/v1/resume/cleanup-duplicates",
-            "/api/v1/survey/**",
             "/debug/**",
             "/ws/**"
     );
