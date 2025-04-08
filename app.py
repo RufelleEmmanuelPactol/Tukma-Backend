@@ -108,8 +108,8 @@ def finished_interviews(access_key):
 
 @app.route("/done_interview/<access_key>/<name>/<email>", methods=["GET"])
 def is_finished(access_key, name, email):
-    is_finished = check_interview(access_key, name, email)
-    return jsonify({"status": "success", "is_finished": is_finished })
+    stats = check_interview(access_key, name, email)
+    return jsonify({"status": stats})
 
     
 @app.route("/debug", methods=["GET"])

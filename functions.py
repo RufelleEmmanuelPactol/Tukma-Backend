@@ -191,8 +191,29 @@ def check_interview(access_key, name, email):
             """,
             (access_key, name, email)
         )
-        result = cursor.fetchone()
-    return result is not None  # True if the interview is marked as finished
+        isFinished = cursor.fetchone()
+
+        cursor.execute(
+            """
+            SELECT 1
+            FROM messages 
+            WHERE access_key = ?
+              AND name = ?
+              AND email = ?
+              AND is_finished = 0
+            LIMIT 1
+            """,
+            (access_key, name, email)
+        )
+        isStarted = cursor.fetchone()
+
+        if isFinished is not None:
+            return "finished"
+
+        if isStarted is not None:
+            return "started"
+
+    return "uninitiated"
 
 
 def debug():
