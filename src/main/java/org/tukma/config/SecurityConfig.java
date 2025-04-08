@@ -3,6 +3,7 @@ package org.tukma.config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -41,7 +42,8 @@ public class SecurityConfig {
                     auth.requestMatchers("/api/v1/auth/**", "/api/v1/applicant/**", "/debug/**").permitAll();
                     auth.requestMatchers("/api/v1/jobs/get-all-jobs", "/api/v1/jobs/get-job-details/**", "/api/v1/jobs/job-metadata", "/api/v1/jobs/search").permitAll();
                     auth.requestMatchers("/api/v1/resume/cleanup-duplicates").permitAll();
-                    auth.requestMatchers("/api/v1/survey/**").permitAll();
+                    auth.requestMatchers(HttpMethod.GET, "/api/v1/survey/questions").permitAll();
+                    auth.requestMatchers("/api/v1/survey/answers/**").authenticated();
                     auth.requestMatchers("/api/v1/**").authenticated();
                 })
                 .headers(headers -> headers
