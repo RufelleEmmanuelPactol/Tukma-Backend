@@ -24,6 +24,7 @@ The API is organized into several logical sections:
 - [Questions API](docs/questions-api.md) - Interview question management for jobs
 - [Resume API](docs/resume-api.md) - Resume uploads, analysis, and retrieval
 - [Interviewer API](docs/interviewer-api.md) - Real-time interviewing via WebSockets
+- [Survey API](docs/survey-api.md) - Survey question management for feedback collection
 - [General Information](docs/general-info.md) - Authentication, models, and common patterns
 
 ## Technology Stack
