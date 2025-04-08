@@ -14,6 +14,7 @@ Most API endpoints require authentication using the JWT token provided during lo
 - Resume duplicates cleanup (`/api/v1/resume/cleanup-duplicates`)
 - Debug endpoints (`/debug/**`)
 - WebSocket endpoints (`/ws/**`)
+- Resume questions endpoints (`/api/v1/survey`)
 
 All other endpoints require a valid JWT token to be included in the request cookies.
 
