@@ -43,7 +43,7 @@ def insert_msg(content, access_key, role, name, email):
     is_finished = 0
     phrase = "Thank you for your time and insights"
 
-    if phrase.lower() in content.lower():
+    if phrase.lower() in content.lower() and role == "system":
         is_finished = 1
 
     with sqlite3.connect(DATABASE) as conn:
