@@ -39,3 +39,4 @@ build/
 src/main/resources/.env
 
 /repomix-output.txt
+/.repomixignore
