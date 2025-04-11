@@ -31,7 +31,7 @@ public class InterviewController {
     }
 
     @PostMapping("/messages")
-    public ResponseEntity<MessageResponse> processMessages(@RequestBody MessageRequest messageRequest) {
+    public ResponseEntity<?> processMessages(@RequestBody MessageRequest messageRequest) {
         // Get current authenticated user
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         UserEntity currentUser = null;
@@ -44,19 +44,9 @@ public class InterviewController {
             + (currentUser != null ? currentUser.getUsername() : "unauthenticated user"));
         
         // Process the messages using the service
-        var processedMessages = messageProcessingService.processMessages(messageRequest.getMessages());
+        messageProcessingService.processMessages(messageRequest.getMessages());
         
-        // Create a response with the processed messages
-        Map<String, Object> responseData = new HashMap<>();
-        responseData.put("receivedCount", messageRequest.getMessages().size());
-        responseData.put("messages", processedMessages);
-        
-        MessageResponse response = new MessageResponse(
-            "success", 
-            "Successfully processed messages", 
-            responseData
-        );
-        
-        return ResponseEntity.ok(response);
+        // Simply return OK status
+        return ResponseEntity.ok().build();
     }
 }
