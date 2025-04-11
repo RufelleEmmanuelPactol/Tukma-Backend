@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.StringJoiner;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 import com.google.gson.Gson;
 import org.tukma.auth.models.UserEntity;
@@ -180,6 +181,16 @@ private final org.tukma.jobs.services.JobService jobService;
      * @param openAIKey API key for OpenAI
      * @return Classification results
      */
+    /**
+     * Maximum number of retry attempts for API requests
+     */
+    private static final int MAX_RETRY_ATTEMPTS = 3;
+    
+    /**
+     * Base delay in milliseconds for exponential backoff retry strategy
+     */
+    private static final long RETRY_BASE_DELAY_MS = 1000;
+    
     private Map<String, Object> classifyMessages(List<Message> messages, String openAIKey) throws Exception {
         // Format the messages for OpenAI
         StringBuilder promptBuilder = new StringBuilder();
@@ -225,8 +236,8 @@ private final org.tukma.jobs.services.JobService jobService;
                 .POST(HttpRequest.BodyPublishers.ofString(jsonRequestBody))
                 .build();
         
-        // Send request and get response
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        // Send request and get response with retry capability
+        HttpResponse<String> response = sendRequestWithRetry(client, request);
         
         // Parse the response
         Map<String, Object> responseMap = gson.fromJson(response.body(), Map.class);
@@ -237,36 +248,71 @@ private final org.tukma.jobs.services.JobService jobService;
             Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
             String content = (String) message.get("content");
             
-            // Try to parse the content as JSON
-            try {
-                // First try parsing directly
-                Map<String, Object> parsedContent;
+            // Try to parse the content as JSON with retry
+            int attempts = 0;
+            Exception lastException = null;
+            
+            while (attempts < MAX_RETRY_ATTEMPTS) {
                 try {
-                    parsedContent = gson.fromJson(content, Map.class);
+                    // First try parsing directly
+                    Map<String, Object> parsedContent;
+                    try {
+                        parsedContent = gson.fromJson(content, Map.class);
+                    } catch (Exception e) {
+                        // If direct parsing fails, try stripping markdown formatting
+                        logger.info("Direct JSON parsing failed, trying to strip markdown formatting");
+                        String cleanedContent = stripMarkdownCodeBlock(content);
+                        parsedContent = gson.fromJson(cleanedContent, Map.class);
+                    }
+                    
+                    // Return both the original messages and the classification
+                    Map<String, Object> result = new HashMap<>();
+                    result.put("originalMessages", messages);
+                    result.put("classification", parsedContent);
+                    
+                    return result;
                 } catch (Exception e) {
-                    // If direct parsing fails, try stripping markdown formatting
-                    logger.info("Direct JSON parsing failed, trying to strip markdown formatting");
-                    String cleanedContent = stripMarkdownCodeBlock(content);
-                    parsedContent = gson.fromJson(cleanedContent, Map.class);
+                    lastException = e;
+                    logger.warning("Failed to parse JSON on attempt " + (attempts + 1) + ": " + e.getMessage());
+                    
+                    // If we've exhausted retries, break out of the loop
+                    if (++attempts >= MAX_RETRY_ATTEMPTS) {
+                        break;
+                    }
+                    
+                    // Retry the API request to get a properly formatted response
+                    try {
+                        long delayMs = RETRY_BASE_DELAY_MS * (long) Math.pow(2, attempts - 1);
+                        logger.info("Retrying API request in " + delayMs + "ms...");
+                        Thread.sleep(delayMs);
+                        
+                        HttpResponse<String> retryResponse = sendRequestWithRetry(client, request);
+                        responseMap = gson.fromJson(retryResponse.body(), Map.class);
+                        choices = (List<Map<String, Object>>) responseMap.get("choices");
+                        
+                        if (choices != null && !choices.isEmpty()) {
+                            message = (Map<String, Object>) choices.get(0).get("message");
+                            content = (String) message.get("content");
+                            logger.info("Received new response to parse on retry #" + attempts);
+                        } else {
+                            logger.warning("Received invalid response structure on retry");
+                        }
+                    } catch (Exception retryEx) {
+                        logger.warning("Error during retry: " + retryEx.getMessage());
+                    }
                 }
-                
-                // Return both the original messages and the classification
-                Map<String, Object> result = new HashMap<>();
-                result.put("originalMessages", messages);
-                result.put("classification", parsedContent);
-                
-                return result;
-            } catch (Exception e) {
-                logger.warning("Failed to parse OpenAI response as JSON: " + e.getMessage());
-                logger.info("Raw response content: " + content);
-                
-                // Return the raw content if parsing fails
-                Map<String, Object> result = new HashMap<>();
-                result.put("originalMessages", messages);
-                result.put("rawResponse", content);
-                
-                return result;
             }
+            
+            // If we get here, all retry attempts failed
+            logger.warning("All JSON parsing attempts failed. Last error: " + (lastException != null ? lastException.getMessage() : "Unknown"));
+            logger.info("Raw response content: " + content);
+            
+            // Return the raw content if parsing fails after all retries
+            Map<String, Object> result = new HashMap<>();
+            result.put("originalMessages", messages);
+            result.put("rawResponse", content);
+            
+            return result;
         }
         
         logger.warning("Unexpected response structure from OpenAI API");
@@ -344,8 +390,8 @@ private final org.tukma.jobs.services.JobService jobService;
                 .POST(HttpRequest.BodyPublishers.ofString(jsonRequestBody))
                 .build();
         
-        // Send request and get response
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        // Send request and get response with retry capability
+        HttpResponse<String> response = sendRequestWithRetry(client, request);
         
         // Parse the response
         Map<String, Object> responseMap = gson.fromJson(response.body(), Map.class);
@@ -356,27 +402,63 @@ private final org.tukma.jobs.services.JobService jobService;
             Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
             String content = (String) message.get("content");
             
-            // Try to parse the content as JSON
-            try {
-                // First try parsing directly
-                Map<String, Object> parsedContent;
+            // Try to parse the content as JSON with retry mechanism
+            int attempts = 0;
+            Exception lastException = null;
+            
+            while (attempts < MAX_RETRY_ATTEMPTS) {
                 try {
-                    parsedContent = gson.fromJson(content, Map.class);
-                    return parsedContent;
+                    // First try parsing directly
+                    Map<String, Object> parsedContent;
+                    try {
+                        parsedContent = gson.fromJson(content, Map.class);
+                        return parsedContent;
+                    } catch (Exception e) {
+                        // If direct parsing fails, try stripping markdown formatting
+                        logger.info("Direct JSON parsing failed for communication skills, trying to strip markdown formatting");
+                        String cleanedContent = stripMarkdownCodeBlock(content);
+                        parsedContent = gson.fromJson(cleanedContent, Map.class);
+                        return parsedContent;
+                    }
                 } catch (Exception e) {
-                    // If direct parsing fails, try stripping markdown formatting
-                    logger.info("Direct JSON parsing failed for communication skills, trying to strip markdown formatting");
-                    String cleanedContent = stripMarkdownCodeBlock(content);
-                    parsedContent = gson.fromJson(cleanedContent, Map.class);
-                    return parsedContent;
+                    lastException = e;
+                    logger.warning("Failed to parse communication skills JSON on attempt " + (attempts + 1) + ": " + e.getMessage());
+                    
+                    // If we've exhausted retries, break out of the loop
+                    if (++attempts >= MAX_RETRY_ATTEMPTS) {
+                        break;
+                    }
+                    
+                    // Retry the API request to get a properly formatted response
+                    try {
+                        long delayMs = RETRY_BASE_DELAY_MS * (long) Math.pow(2, attempts - 1);
+                        logger.info("Retrying communication skills API request in " + delayMs + "ms...");
+                        Thread.sleep(delayMs);
+                        
+                        HttpResponse<String> retryResponse = sendRequestWithRetry(client, request);
+                        responseMap = gson.fromJson(retryResponse.body(), Map.class);
+                        choices = (List<Map<String, Object>>) responseMap.get("choices");
+                        
+                        if (choices != null && !choices.isEmpty()) {
+                            message = (Map<String, Object>) choices.get(0).get("message");
+                            content = (String) message.get("content");
+                            logger.info("Received new communication skills response to parse on retry #" + attempts);
+                        } else {
+                            logger.warning("Received invalid communication skills response structure on retry");
+                        }
+                    } catch (Exception retryEx) {
+                        logger.warning("Error during communication skills retry: " + retryEx.getMessage());
+                    }
                 }
-            } catch (Exception e) {
-                logger.warning("Failed to parse communication skills response as JSON: " + e.getMessage());
-                logger.info("Raw communication skills response content: " + content);
-                
-                // Return the raw content if parsing fails
-                return Map.of("rawCommunicationResponse", content);
             }
+            
+            // If we get here, all retry attempts failed
+            logger.warning("All communication skills JSON parsing attempts failed. Last error: " + 
+                          (lastException != null ? lastException.getMessage() : "Unknown"));
+            logger.info("Raw communication skills response content: " + content);
+            
+            // Return the raw content if parsing fails after all retries
+            return Map.of("rawCommunicationResponse", content);
         }
         
         logger.warning("Unexpected response structure from communication skills evaluation API");
@@ -429,8 +511,8 @@ private final org.tukma.jobs.services.JobService jobService;
                 .POST(HttpRequest.BodyPublishers.ofString(jsonRequestBody))
                 .build();
         
-        // Send request and get response
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        // Send request and get response with retry capability
+        HttpResponse<String> response = sendRequestWithRetry(client, request);
         
         // Parse the response
         Map<String, Object> responseMap = gson.fromJson(response.body(), Map.class);
@@ -441,27 +523,63 @@ private final org.tukma.jobs.services.JobService jobService;
             Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
             String content = (String) message.get("content");
             
-            // Try to parse the content as JSON
-            try {
-                // First try parsing directly
-                Map<String, Object> parsedContent;
+            // Try to parse the content as JSON with retry mechanism
+            int attempts = 0;
+            Exception lastException = null;
+            
+            while (attempts < MAX_RETRY_ATTEMPTS) {
                 try {
-                    parsedContent = gson.fromJson(content, Map.class);
-                    return parsedContent;
+                    // First try parsing directly
+                    Map<String, Object> parsedContent;
+                    try {
+                        parsedContent = gson.fromJson(content, Map.class);
+                        return parsedContent;
+                    } catch (Exception e) {
+                        // If direct parsing fails, try stripping markdown formatting
+                        logger.info("Direct JSON parsing failed for grading, trying to strip markdown formatting");
+                        String cleanedContent = stripMarkdownCodeBlock(content);
+                        parsedContent = gson.fromJson(cleanedContent, Map.class);
+                        return parsedContent;
+                    }
                 } catch (Exception e) {
-                    // If direct parsing fails, try stripping markdown formatting
-                    logger.info("Direct JSON parsing failed for grading, trying to strip markdown formatting");
-                    String cleanedContent = stripMarkdownCodeBlock(content);
-                    parsedContent = gson.fromJson(cleanedContent, Map.class);
-                    return parsedContent;
+                    lastException = e;
+                    logger.warning("Failed to parse grading JSON on attempt " + (attempts + 1) + ": " + e.getMessage());
+                    
+                    // If we've exhausted retries, break out of the loop
+                    if (++attempts >= MAX_RETRY_ATTEMPTS) {
+                        break;
+                    }
+                    
+                    // Retry the API request to get a properly formatted response
+                    try {
+                        long delayMs = RETRY_BASE_DELAY_MS * (long) Math.pow(2, attempts - 1);
+                        logger.info("Retrying grading API request in " + delayMs + "ms...");
+                        Thread.sleep(delayMs);
+                        
+                        HttpResponse<String> retryResponse = sendRequestWithRetry(client, request);
+                        responseMap = gson.fromJson(retryResponse.body(), Map.class);
+                        choices = (List<Map<String, Object>>) responseMap.get("choices");
+                        
+                        if (choices != null && !choices.isEmpty()) {
+                            message = (Map<String, Object>) choices.get(0).get("message");
+                            content = (String) message.get("content");
+                            logger.info("Received new grading response to parse on retry #" + attempts);
+                        } else {
+                            logger.warning("Received invalid grading response structure on retry");
+                        }
+                    } catch (Exception retryEx) {
+                        logger.warning("Error during grading retry: " + retryEx.getMessage());
+                    }
                 }
-            } catch (Exception e) {
-                logger.warning("Failed to parse grading response as JSON: " + e.getMessage());
-                logger.info("Raw grading response content: " + content);
-                
-                // Return the raw content if parsing fails
-                return Map.of("rawGradingResponse", content);
             }
+            
+            // If we get here, all retry attempts failed
+            logger.warning("All grading JSON parsing attempts failed. Last error: " + 
+                          (lastException != null ? lastException.getMessage() : "Unknown"));
+            logger.info("Raw grading response content: " + content);
+            
+            // Return the raw content if parsing fails after all retries
+            return Map.of("rawGradingResponse", content);
         }
         
         logger.warning("Unexpected response structure from grading API");
@@ -512,8 +630,8 @@ private final org.tukma.jobs.services.JobService jobService;
                     .POST(HttpRequest.BodyPublishers.ofString(jsonRequestBody))
                     .build();
             
-            // Send request and get response
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            // Send request and get response with retry capability
+            HttpResponse<String> response = sendRequestWithRetry(client, request);
             
             // Parse the response
             Map<String, Object> responseMap = gson.fromJson(response.body(), Map.class);
@@ -659,6 +777,46 @@ private final org.tukma.jobs.services.JobService jobService;
             logger.severe("Error storing technical results: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+    
+    /**
+     * Helper method to send HTTP requests with retry capability.
+     * Uses exponential backoff for retries.
+     * 
+     * @param client The HTTP client
+     * @param request The HTTP request to send
+     * @return The HTTP response
+     * @throws Exception If all retry attempts fail
+     */
+    private HttpResponse<String> sendRequestWithRetry(HttpClient client, HttpRequest request) throws Exception {
+        Exception lastException = null;
+        
+        for (int attempt = 0; attempt < MAX_RETRY_ATTEMPTS; attempt++) {
+            try {
+                if (attempt > 0) {
+                    logger.info("Sending HTTP request, attempt " + (attempt + 1) + " of " + MAX_RETRY_ATTEMPTS);
+                }
+                
+                return client.send(request, HttpResponse.BodyHandlers.ofString());
+            } catch (Exception e) {
+                lastException = e;
+                logger.warning("HTTP request failed on attempt " + (attempt + 1) + ": " + e.getMessage());
+                
+                // If this is the last attempt, don't sleep, just throw
+                if (attempt >= MAX_RETRY_ATTEMPTS - 1) {
+                    break;
+                }
+                
+                // Exponential backoff
+                long delayMs = RETRY_BASE_DELAY_MS * (long) Math.pow(2, attempt);
+                logger.info("Retrying HTTP request in " + delayMs + "ms...");
+                Thread.sleep(delayMs);
+            }
+        }
+        
+        // If we get here, all attempts failed
+        throw new Exception("Failed to send HTTP request after " + MAX_RETRY_ATTEMPTS + " attempts. Last error: " + 
+            (lastException != null ? lastException.getMessage() : "Unknown"));
     }
     
     private void storeCommunicationResults(Map<String, Object> communicationResult, UserEntity user, String accessKey) {
