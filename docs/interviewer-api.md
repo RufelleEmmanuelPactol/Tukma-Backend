@@ -42,6 +42,48 @@ Possible status values:
 - `not-initiated`: WebSocket connection has not been initiated
 - `unauthorized`: The ticket doesn't belong to the current user
 
+### Process Interview Messages
+
+```
+POST /api/v1/interview/messages
+```
+
+Process a batch of interview messages. This endpoint allows for sending multiple messages in a single request for processing.
+
+**Request Body:**
+```json
+{
+  "messages": [
+    {
+      "id": 1,
+      "content": "Tell me about your programming experience.",
+      "timestamp": "2025-03-08T14:30:00.000Z",
+      "role": "assistant"
+    },
+    {
+      "id": 2,
+      "content": "I have five years of experience with Java and Spring Boot.",
+      "timestamp": "2025-03-08T14:30:30.000Z",
+      "role": "user"
+    }
+  ]
+}
+```
+
+**Message Fields:**
+- `id`: Unique identifier for the message
+- `content`: The actual text content of the message
+- `timestamp`: ISO-8601 formatted timestamp
+- `role`: Role of the message sender (e.g., "user", "assistant", "system")
+
+**Response:**
+- `200 OK`: Messages processed successfully
+
+**Authentication:**
+- This endpoint requires authentication. The user's identity is extracted from the security context.
+- If authenticated, the user information is logged along with the number of messages received.
+- If not authenticated, the request is still processed but logged as coming from an "unauthenticated user".
+
 ## WebSocket Protocol
 
 The WebSocket connection uses a binary protocol for real-time interviewing. The message format is:
