@@ -21,21 +21,26 @@ import java.util.ArrayList;
 import com.google.gson.Gson;
 import org.tukma.auth.models.UserEntity;
 import org.tukma.interview.models.CommunicationResults;
+import org.tukma.interview.models.TechnicalResults;
 import org.tukma.interview.repositories.CommunicationResultsRepository;
+import org.tukma.interview.repositories.TechnicalResultsRepository;
 
 @Service
 public class MessageProcessingService {
 
     private final Environment environment;
     private final CommunicationResultsRepository communicationResultsRepository;
-    private final org.tukma.jobs.services.JobService jobService;
+private final TechnicalResultsRepository technicalResultsRepository;
+private final org.tukma.jobs.services.JobService jobService;
     private static final Logger logger = Logger.getLogger(MessageProcessingService.class.getName());
     
     public MessageProcessingService(Environment environment, 
                                    CommunicationResultsRepository communicationResultsRepository,
+                                   TechnicalResultsRepository technicalResultsRepository,
                                    org.tukma.jobs.services.JobService jobService) {
         this.environment = environment;
         this.communicationResultsRepository = communicationResultsRepository;
+        this.technicalResultsRepository = technicalResultsRepository;
         this.jobService = jobService;
     }
     
@@ -146,6 +151,11 @@ public class MessageProcessingService {
             // Store communication results if we have a valid user and communication data
             if (currentUser != null && communicationResult.containsKey("communication_evaluation")) {
                 storeCommunicationResults(communicationResult, currentUser, accessKey);
+            }
+            
+            // Store technical results if we have a valid user and grading data
+            if (currentUser != null && gradingResult.containsKey("graded_responses")) {
+                storeTechnicalResults(gradingResult, currentUser, accessKey);
             }
             
             return result;
@@ -536,6 +546,109 @@ public class MessageProcessingService {
      * @param user The user entity to associate with these results
      * @param accessKey The job access key (may be null)
      */
+    /**
+     * Store technical grading results in the database.
+     * Processes each graded technical question and creates individual TechnicalResults records.
+     * 
+     * @param gradingResult The raw technical grading result from the API
+     * @param user The user entity to associate with these results
+     * @param accessKey The job access key (may be null)
+     */
+    private void storeTechnicalResults(Map<String, Object> gradingResult, UserEntity user, String accessKey) {
+        try {
+            // Extract the graded responses array
+            List<Map<String, Object>> gradedResponses = (List<Map<String, Object>>) gradingResult.get("graded_responses");
+            if (gradedResponses == null || gradedResponses.isEmpty()) {
+                logger.warning("Cannot store technical results: missing or empty graded_responses data");
+                return;
+            }
+            
+            // Get the job if accessKey is provided
+            org.tukma.jobs.models.Job job = null;
+            if (accessKey != null && !accessKey.isEmpty()) {
+                job = jobService.getByAccessKey(accessKey);
+                if (job == null) {
+                    logger.warning("Could not find job for accessKey: " + accessKey);
+                    // Continue without setting the job reference
+                }
+            }
+            
+            // Process each graded question-answer pair
+            for (Map<String, Object> gradedResponse : gradedResponses) {
+                String question = (String) gradedResponse.get("question");
+                String answer = (String) gradedResponse.get("answer");
+                
+                // Extract the score
+                Integer score = null;
+                if (gradedResponse.containsKey("score")) {
+                    Object scoreObj = gradedResponse.get("score");
+                    if (scoreObj instanceof Number) {
+                        score = ((Number) scoreObj).intValue();
+                        
+                        // Ensure score is in the 1-10 range
+                        if (score > 10) {
+                            score = 10; // Cap at 10
+                        } else if (score < 1) {
+                            score = 1; // Minimum of 1
+                        }
+                    }
+                }
+                
+                if (score == null) {
+                    logger.warning("Cannot store technical result: missing or invalid score for question: " + question);
+                    continue; // Skip this question and move to the next
+                }
+                
+                // Extract feedback
+                String feedback = (String) gradedResponse.get("feedback");
+                
+                // Extract errors as a concatenated string
+                String combinedErrors = null;
+                if (gradedResponse.containsKey("errors")) {
+                    Object errorsObj = gradedResponse.get("errors");
+                    if (errorsObj instanceof List) {
+                        List<String> errors = (List<String>) errorsObj;
+                        if (!errors.isEmpty()) {
+                            StringJoiner joiner = new StringJoiner(". ");
+                            for (String error : errors) {
+                                joiner.add(error);
+                            }
+                            combinedErrors = joiner.toString();
+                            if (!combinedErrors.endsWith(".")) {
+                                combinedErrors = combinedErrors + ".";
+                            }
+                        }
+                    } else if (errorsObj instanceof String) {
+                        combinedErrors = (String) errorsObj;
+                    }
+                }
+                
+                // Create and save the technical results entity
+                TechnicalResults results = new TechnicalResults();
+                results.setUser(user);
+                results.setQuestionText(question);
+                results.setAnswerText(answer);
+                results.setScore(score);
+                results.setFeedback(feedback);
+                results.setErrors(combinedErrors);
+                
+                // Set the accessKey and job if provided
+                if (accessKey != null && !accessKey.isEmpty()) {
+                    results.setAccessKey(accessKey);
+                    results.setJob(job); // This may be null if the job wasn't found
+                }
+                
+                technicalResultsRepository.save(results);
+            }
+            
+            logger.info("Stored " + gradedResponses.size() + " technical results for user " + user.getUsername());
+            
+        } catch (Exception e) {
+            logger.severe("Error storing technical results: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
     private void storeCommunicationResults(Map<String, Object> communicationResult, UserEntity user, String accessKey) {
         try {
             Map<String, Object> evaluation = (Map<String, Object>) communicationResult.get("communication_evaluation");

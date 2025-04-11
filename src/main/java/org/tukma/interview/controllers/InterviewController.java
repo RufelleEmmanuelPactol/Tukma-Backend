@@ -15,7 +15,9 @@ import org.tukma.auth.models.UserEntity;
 import org.tukma.interview.dtos.MessageRequest;
 import org.tukma.interview.dtos.MessageResponse;
 import org.tukma.interview.models.CommunicationResults;
+import org.tukma.interview.models.TechnicalResults;
 import org.tukma.interview.repositories.CommunicationResultsRepository;
+import org.tukma.interview.repositories.TechnicalResultsRepository;
 import org.tukma.interview.services.MessageProcessingService;
 import org.tukma.jobs.models.Job;
 import org.tukma.jobs.services.JobService;
@@ -34,14 +36,17 @@ public class InterviewController {
     
     private final MessageProcessingService messageProcessingService;
     private final CommunicationResultsRepository communicationResultsRepository;
+    private final TechnicalResultsRepository technicalResultsRepository;
     private final JobService jobService;
     
     @Autowired
     public InterviewController(MessageProcessingService messageProcessingService,
                               CommunicationResultsRepository communicationResultsRepository,
+                              TechnicalResultsRepository technicalResultsRepository,
                               JobService jobService) {
         this.messageProcessingService = messageProcessingService;
         this.communicationResultsRepository = communicationResultsRepository;
+        this.technicalResultsRepository = technicalResultsRepository;
         this.jobService = jobService;
     }
 
@@ -193,5 +198,123 @@ public class InterviewController {
         
         // Use the existing endpoint to get the results
         return getUserCommunicationResultForJob(accessKey, currentUser.getId());
+    }
+    
+    /**
+     * Get technical results for a specific job access key
+     * This is useful for recruiters to see all technical evaluations for a specific job
+     * 
+     * @param accessKey The job's access key
+     * @return List of technical results for the job
+     */
+    @GetMapping("/technical-results/job/{accessKey}")
+    public ResponseEntity<?> getTechnicalResultsByJobAccessKey(@PathVariable String accessKey) {
+        // Verify job exists
+        Job job = jobService.getByAccessKey(accessKey);
+        if (job == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Job not found with access key: " + accessKey));
+        }
+        
+        // Get current authenticated user
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || !(auth.getPrincipal() instanceof UserEntity)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "You must be logged in to view technical results"));
+        }
+        
+        UserEntity currentUser = (UserEntity) auth.getPrincipal();
+        
+        // Verify user is the job owner (only recruiters/job owners should see all results)
+        if (!job.getOwner().getId().equals(currentUser.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "You are not authorized to view these technical results"));
+        }
+        
+        // Get all technical results for this job
+        List<TechnicalResults> results = technicalResultsRepository.findByAccessKeyOrderByCreatedAtDesc(accessKey);
+        
+        // Return the results with the job information
+        Map<String, Object> response = new HashMap<>();
+        response.put("job", job);
+        response.put("technicalResults", results);
+        response.put("count", results.size());
+        
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * Get a specific user's technical results for a job
+     * This can be used by both recruiters (to see a specific applicant) and applicants (to see their own results)
+     * 
+     * @param accessKey The job's access key
+     * @param userId The user's ID
+     * @return The user's technical results for the job
+     */
+    @GetMapping("/technical-results/job/{accessKey}/user/{userId}")
+    public ResponseEntity<?> getUserTechnicalResultsForJob(
+            @PathVariable String accessKey,
+            @PathVariable Long userId) {
+        
+        // Verify job exists
+        Job job = jobService.getByAccessKey(accessKey);
+        if (job == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Job not found with access key: " + accessKey));
+        }
+        
+        // Get current authenticated user
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || !(auth.getPrincipal() instanceof UserEntity)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "You must be logged in to view technical results"));
+        }
+        
+        UserEntity currentUser = (UserEntity) auth.getPrincipal();
+        
+        // Security check: Only allow if the user is either:
+        // 1. The job owner (recruiter) viewing any applicant's results, or
+        // 2. The applicant viewing their own results
+        boolean isJobOwner = job.getOwner().getId().equals(currentUser.getId());
+        boolean isViewingOwnResults = currentUser.getId().equals(userId);
+        
+        if (!isJobOwner && !isViewingOwnResults) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "You are not authorized to view these technical results"));
+        }
+        
+        // Get the user's technical results for this job
+        List<TechnicalResults> results = technicalResultsRepository
+                .findByUser_IdAndAccessKeyOrderByCreatedAtDesc(userId, accessKey);
+        
+        if (results.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "No technical results found for this user and job"));
+        }
+        
+        // Return all results for this user and job
+        return ResponseEntity.ok(results);
+    }
+    
+    /**
+     * Get the current user's technical results for a specific job
+     * This is a convenience endpoint for applicants to see their own results
+     * 
+     * @param accessKey The job's access key
+     * @return The user's technical results for the job
+     */
+    @GetMapping("/technical-results/my/{accessKey}")
+    public ResponseEntity<?> getMyTechnicalResultsForJob(@PathVariable String accessKey) {
+        // Get current authenticated user
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || !(auth.getPrincipal() instanceof UserEntity)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "You must be logged in to view your technical results"));
+        }
+        
+        UserEntity currentUser = (UserEntity) auth.getPrincipal();
+        
+        // Use the existing endpoint to get the results
+        return getUserTechnicalResultsForJob(accessKey, currentUser.getId());
     }
 }
