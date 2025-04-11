@@ -7,9 +7,9 @@ import java.util.List;
 import java.util.logging.Logger;
 
 @Service
-public class InterviewService {
+public class MessageProcessingService {
     
-    private static final Logger logger = Logger.getLogger(InterviewService.class.getName());
+    private static final Logger logger = Logger.getLogger(MessageProcessingService.class.getName());
     
     /**
      * Process a list of messages

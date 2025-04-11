@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.tukma.auth.models.UserEntity;
 import org.tukma.interview.dtos.MessageRequest;
 import org.tukma.interview.dtos.MessageResponse;
-import org.tukma.interview.services.InterviewService;
+import org.tukma.interview.services.MessageProcessingService;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,11 +23,11 @@ public class InterviewController {
 
     private static final Logger logger = Logger.getLogger(InterviewController.class.getName());
     
-    private final InterviewService interviewService;
+    private final MessageProcessingService messageProcessingService;
     
     @Autowired
-    public InterviewController(InterviewService interviewService) {
-        this.interviewService = interviewService;
+    public InterviewController(MessageProcessingService messageProcessingService) {
+        this.messageProcessingService = messageProcessingService;
     }
 
     @PostMapping("/messages")
@@ -44,7 +44,7 @@ public class InterviewController {
             + (currentUser != null ? currentUser.getUsername() : "unauthenticated user"));
         
         // Process the messages using the service
-        var processedMessages = interviewService.processMessages(messageRequest.getMessages());
+        var processedMessages = messageProcessingService.processMessages(messageRequest.getMessages());
         
         // Create a response with the processed messages
         Map<String, Object> responseData = new HashMap<>();
