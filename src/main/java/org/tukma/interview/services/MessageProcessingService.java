@@ -177,11 +177,16 @@ public class MessageProcessingService {
         promptBuilder.append("Return a JSON array in this exact format: ");
         promptBuilder.append("{\"messages\": [{\"question\": \"...\", \"answer\": \"...\", \"type\":\"standard|compsci-technical\"}]}.\n\n");
         
-        // Add the messages from the request
+        // Add the messages from the request (with grammar-corrected answers)
         promptBuilder.append("Here are the messages to classify:\n");
         for (int i = 0; i < messages.size(); i += 2) {
             String question = (i < messages.size()) ? messages.get(i).getContent() : "";
             String answer = (i + 1 < messages.size()) ? messages.get(i + 1).getContent() : "";
+            
+            // Apply grammar correction to the answer
+            if (i + 1 < messages.size()) {
+                answer = correctGrammarInAnswer(answer, openAIKey);
+            }
             
             promptBuilder.append("Question: ").append(question).append("\n");
             promptBuilder.append("Answer: ").append(answer).append("\n\n");
@@ -297,8 +302,13 @@ public class MessageProcessingService {
         // Add the standard message pairs
         promptBuilder.append("Standard questions and answers to evaluate:\n\n");
         for (Map<String, Object> msgPair : standardMessages) {
-            promptBuilder.append("Question: ").append(msgPair.get("question")).append("\n");
-            promptBuilder.append("Answer: ").append(msgPair.get("answer")).append("\n\n");
+            String question = (String) msgPair.get("question");
+            String answer = (String) msgPair.get("answer");
+            
+            // The answers have already been grammar-corrected in the classification step
+            
+            promptBuilder.append("Question: ").append(question).append("\n");
+            promptBuilder.append("Answer: ").append(answer).append("\n\n");
         }
         
         // Create the OpenAI API request body
@@ -377,8 +387,13 @@ public class MessageProcessingService {
         // Add the technical message pairs
         promptBuilder.append("Technical questions and answers to grade:\n\n");
         for (Map<String, Object> msgPair : technicalMessages) {
-            promptBuilder.append("Question: ").append(msgPair.get("question")).append("\n");
-            promptBuilder.append("Answer: ").append(msgPair.get("answer")).append("\n\n");
+            String question = (String) msgPair.get("question");
+            String answer = (String) msgPair.get("answer");
+            
+            // The answers have already been grammar-corrected in the classification step
+            
+            promptBuilder.append("Question: ").append(question).append("\n");
+            promptBuilder.append("Answer: ").append(answer).append("\n\n");
         }
         
         // Create the OpenAI API request body
@@ -441,6 +456,76 @@ public class MessageProcessingService {
         
         logger.warning("Unexpected response structure from grading API");
         return Map.of("error", "Unexpected response structure from grading API");
+        }
+    
+    /**
+     * Correct grammar and spelling in an answer using OpenAI
+     * 
+     * @param answer The original answer text with potential grammar issues
+     * @param openAIKey API key for OpenAI
+     * @return The corrected answer text
+     */
+    private String correctGrammarInAnswer(String answer, String openAIKey) {
+        if (answer == null || answer.trim().isEmpty()) {
+            return answer;
+        }
+        
+        try {
+            // Format the prompt for grammar correction
+            StringBuilder promptBuilder = new StringBuilder();
+            promptBuilder.append("Please correct the grammar and spelling in the following interview answer. ");
+            promptBuilder.append("Maintain the original meaning and technical content, but fix any grammatical errors, ");
+            promptBuilder.append("typos, awkward phrasing, or incorrect word usage. Do not add or remove any substantive ");
+            promptBuilder.append("information or change technical details. Return only the corrected text.\n\n");
+            promptBuilder.append("Answer to correct: ").append(answer);
+            
+            // Create the OpenAI API request body
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("model", "gpt-4o-mini"); // Using a smaller model for grammar correction
+            
+            Map<String, Object> messageObj = new HashMap<>();
+            messageObj.put("role", "user");
+            messageObj.put("content", promptBuilder.toString());
+            
+            requestBody.put("messages", List.of(messageObj));
+            
+            // Convert to JSON
+            Gson gson = new Gson();
+            String jsonRequestBody = gson.toJson(requestBody);
+            
+            // Create HTTP client and request
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.openai.com/v1/chat/completions"))
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + openAIKey)
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonRequestBody))
+                    .build();
+            
+            // Send request and get response
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            
+            // Parse the response
+            Map<String, Object> responseMap = gson.fromJson(response.body(), Map.class);
+            
+            // Extract the corrected text from the response
+            List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");
+            if (choices != null && !choices.isEmpty()) {
+                Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+                String content = (String) message.get("content");
+                
+                // Return the corrected content
+                logger.info("Grammar correction applied to answer");
+                return content;
+            }
+            
+            logger.warning("Unexpected response structure from grammar correction API");
+            return answer; // Return the original answer if correction fails
+            
+        } catch (Exception e) {
+            logger.warning("Error during grammar correction: " + e.getMessage());
+            return answer; // Return the original answer if an error occurs
+        }
     }
     
     /**
