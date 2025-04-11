@@ -27,6 +27,28 @@ public class MessageProcessingService {
     public MessageProcessingService(Environment environment) {
         this.environment = environment;
     }
+    
+    /**
+     * Helper method to strip markdown code block syntax from a string
+     * 
+     * @param content The content that might contain markdown code blocks
+     * @return The content with markdown code block syntax removed
+     */
+    private String stripMarkdownCodeBlock(String content) {
+        if (content.startsWith("```") && content.endsWith("```")) {
+            // Find the first newline after the opening backticks
+            int startIndex = content.indexOf('\n');
+            if (startIndex != -1) {
+                // Find the position of the closing backticks
+                int endIndex = content.lastIndexOf("```");
+                if (endIndex > startIndex) {
+                    // Extract the content between the backticks
+                    return content.substring(startIndex + 1, endIndex).trim();
+                }
+            }
+        }
+        return content;
+    }
 
     /**
      * Process a list of messages by sending them to OpenAI's API for classification
@@ -93,7 +115,16 @@ public class MessageProcessingService {
                 
                 // Try to parse the content as JSON
                 try {
-                    Map<String, Object> parsedContent = gson.fromJson(content, Map.class);
+                    // First try parsing directly
+                    Map<String, Object> parsedContent;
+                    try {
+                        parsedContent = gson.fromJson(content, Map.class);
+                    } catch (Exception e) {
+                        // If direct parsing fails, try stripping markdown formatting
+                        logger.info("Direct JSON parsing failed, trying to strip markdown formatting");
+                        String cleanedContent = stripMarkdownCodeBlock(content);
+                        parsedContent = gson.fromJson(cleanedContent, Map.class);
+                    }
                     
                     // Return both the original messages and the classification
                     Map<String, Object> result = new HashMap<>();
