@@ -264,6 +264,7 @@ public class MessageProcessingService {
         StringBuilder promptBuilder = new StringBuilder();
         promptBuilder.append("Please analyze the following interview question-answer pairs to evaluate communication skills. ");
         promptBuilder.append("For each evaluation metric, provide a score and explanation. ");
+        promptBuilder.append("Ensure that the overall_score is explicitly on a scale of 1-10, where 1 is poor and 10 is excellent. ");
         promptBuilder.append("The metrics are: \n");
         promptBuilder.append("* **Question-response relevance**: Score 1-5 how directly answers address questions\n");
         promptBuilder.append("* **Information density**: Ratio of substantive content words to total words\n");
@@ -274,7 +275,7 @@ public class MessageProcessingService {
         promptBuilder.append("Return the evaluation in JSON format with the following structure: ");
         promptBuilder.append("{\"communication_evaluation\": {\"metrics\": {\"question_response_relevance\": {\"score\": N, \"explanation\": \"...\"},");
         promptBuilder.append(" \"information_density\": {\"ratio\": N.N, \"explanation\": \"...\"}}, ");
-        promptBuilder.append("\"overall_score\": N.N, \"strengths\": [\"...\"], \"areas_for_improvement\": [\"...\"]}}\n\n");
+        promptBuilder.append("\"overall_score\": N.N (must be on a scale of 1-10), \"strengths\": [\"...\"], \"areas_for_improvement\": [\"...\"]}}\n\n");
         
         // Add the standard message pairs
         promptBuilder.append("Standard questions and answers to evaluate:\n\n");
@@ -446,6 +447,20 @@ public class MessageProcessingService {
                 Object scoreObj = evaluation.get("overall_score");
                 if (scoreObj instanceof Number) {
                     overallScore = ((Number) scoreObj).doubleValue();
+                    
+                    // Ensure score is in the 1-10 range
+                    if (overallScore > 10) {
+                        // If score is above 10, normalize it to a 0-10 scale assuming it's a 0-100 scale
+                        overallScore = overallScore / 10.0;
+                        // Ensure it doesn't exceed 10 due to rounding
+                        overallScore = Math.min(10.0, overallScore);
+                    } else if (overallScore < 1) {
+                        // If score is below 1, set to 1 (minimum score)
+                        overallScore = 1.0;
+                    }
+                    
+                    // Round to 2 decimal places for consistency
+                    overallScore = Math.round(overallScore * 100.0) / 100.0;
                 }
             }
             
