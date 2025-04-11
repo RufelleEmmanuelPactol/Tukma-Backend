@@ -43,10 +43,10 @@ public class InterviewController {
         logger.info("Received " + messageRequest.getMessages().size() + " messages from " 
             + (currentUser != null ? currentUser.getUsername() : "unauthenticated user"));
         
-        // Process the messages using the service
-        messageProcessingService.processMessages(messageRequest.getMessages());
+        // Process the messages using the service and get the classification response
+        Map<String, Object> processedResult = messageProcessingService.processMessages(messageRequest.getMessages());
         
-        // Simply return OK status
-        return ResponseEntity.ok().build();
+        // Return the processed result
+        return ResponseEntity.ok(processedResult);
     }
 }
