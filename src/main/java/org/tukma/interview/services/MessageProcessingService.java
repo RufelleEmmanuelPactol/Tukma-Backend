@@ -195,6 +195,7 @@ private final org.tukma.jobs.services.JobService jobService;
         // Format the messages for OpenAI
         StringBuilder promptBuilder = new StringBuilder();
         promptBuilder.append("Classify each question and answer pair as either 'standard' or 'compsci-technical'. Do not include the introductory questions. ");
+promptBuilder.append("Do not include the system's end interview message, which is typically the last message in the transcript. ");
         promptBuilder.append("Return a JSON array in this exact format: ");
         promptBuilder.append("{\"messages\": [{\"question\": \"...\", \"answer\": \"...\", \"type\":\"standard|compsci-technical\"}]}.\n\n");
         
