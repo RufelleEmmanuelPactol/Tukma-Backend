@@ -38,5 +38,5 @@ build/
 # ENV
 src/main/resources/.env
 
-/repomix-output.txt
-/.repomixignore
+repomix-output.txt
+.repomixignore
