@@ -44,7 +44,7 @@ public class InterviewController {
             + (currentUser != null ? currentUser.getUsername() : "unauthenticated user"));
         
         // Process the messages using the service and get the classification response
-        Map<String, Object> processedResult = messageProcessingService.processMessages(messageRequest.getMessages());
+        Map<String, Object> processedResult = messageProcessingService.processMessages(messageRequest.getMessages(), currentUser);
         
         // Return the processed result
         return ResponseEntity.ok(processedResult);

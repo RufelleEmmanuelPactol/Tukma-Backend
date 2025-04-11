@@ -15,17 +15,24 @@ import java.util.List;
 import java.util.logging.Logger;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.StringJoiner;
+import java.util.ArrayList;
 
 import com.google.gson.Gson;
+import org.tukma.auth.models.UserEntity;
+import org.tukma.interview.models.CommunicationResults;
+import org.tukma.interview.repositories.CommunicationResultsRepository;
 
 @Service
 public class MessageProcessingService {
 
     private final Environment environment;
+    private final CommunicationResultsRepository communicationResultsRepository;
     private static final Logger logger = Logger.getLogger(MessageProcessingService.class.getName());
     
-    public MessageProcessingService(Environment environment) {
+    public MessageProcessingService(Environment environment, CommunicationResultsRepository communicationResultsRepository) {
         this.environment = environment;
+        this.communicationResultsRepository = communicationResultsRepository;
     }
     
     /**
@@ -58,6 +65,18 @@ public class MessageProcessingService {
      * @return The processed messages along with classification and grading information
      */
     public Map<String, Object> processMessages(List<Message> messages) {
+        return processMessages(messages, null);
+    }
+    
+    /**
+     * Process a list of messages by sending them to OpenAI's API for classification
+     * and grading the compsci-technical messages, and store the results in the database
+     * 
+     * @param messages List of messages to process
+     * @param currentUser The current authenticated user (may be null)
+     * @return The processed messages along with classification and grading information
+     */
+    public Map<String, Object> processMessages(List<Message> messages, UserEntity currentUser) {
         logger.info("Processing " + messages.size() + " messages");
         
         String openAIKey = environment.getProperty("openai.key");
@@ -106,6 +125,11 @@ public class MessageProcessingService {
             Map<String, Object> result = new HashMap<>(classificationResult);
             result.put("gradingResult", gradingResult);
             result.put("communicationResult", communicationResult);
+            
+            // Store communication results if we have a valid user and communication data
+            if (currentUser != null && communicationResult.containsKey("communication_evaluation")) {
+                storeCommunicationResults(communicationResult, currentUser);
+            }
             
             return result;
             
@@ -399,5 +423,92 @@ public class MessageProcessingService {
         
         logger.warning("Unexpected response structure from grading API");
         return Map.of("error", "Unexpected response structure from grading API");
+    }
+    
+    /**
+     * Store communication results in the database.
+     * Extracts the overall score, strengths, and areas for improvement from the evaluation results.
+     * 
+     * @param communicationResult The raw communication evaluation result from the API
+     * @param user The user entity to associate with these results
+     */
+    private void storeCommunicationResults(Map<String, Object> communicationResult, UserEntity user) {
+        try {
+            Map<String, Object> evaluation = (Map<String, Object>) communicationResult.get("communication_evaluation");
+            if (evaluation == null) {
+                logger.warning("Cannot store communication results: missing communication_evaluation data");
+                return;
+            }
+            
+            // Extract overall score
+            Double overallScore = null;
+            if (evaluation.containsKey("overall_score")) {
+                Object scoreObj = evaluation.get("overall_score");
+                if (scoreObj instanceof Number) {
+                    overallScore = ((Number) scoreObj).doubleValue();
+                }
+            }
+            
+            if (overallScore == null) {
+                logger.warning("Cannot store communication results: missing or invalid overall_score");
+                return;
+            }
+            
+            // Extract strengths as a single concatenated string
+            String combinedStrengths = null;
+            if (evaluation.containsKey("strengths")) {
+                Object strengthsObj = evaluation.get("strengths");
+                if (strengthsObj instanceof List) {
+                    List<String> strengths = (List<String>) strengthsObj;
+                    if (!strengths.isEmpty()) {
+                        StringJoiner joiner = new StringJoiner(". ");
+                        for (String strength : strengths) {
+                            joiner.add(strength);
+                        }
+                        combinedStrengths = joiner.toString();
+                        if (!combinedStrengths.endsWith(".")) {
+                            combinedStrengths = combinedStrengths + ".";
+                        }
+                    }
+                } else if (strengthsObj instanceof String) {
+                    combinedStrengths = (String) strengthsObj;
+                }
+            }
+            
+            // Extract areas for improvement as a single concatenated string
+            String combinedImprovements = null;
+            if (evaluation.containsKey("areas_for_improvement")) {
+                Object improvementsObj = evaluation.get("areas_for_improvement");
+                if (improvementsObj instanceof List) {
+                    List<String> improvements = (List<String>) improvementsObj;
+                    if (!improvements.isEmpty()) {
+                        StringJoiner joiner = new StringJoiner(". ");
+                        for (String improvement : improvements) {
+                            joiner.add(improvement);
+                        }
+                        combinedImprovements = joiner.toString();
+                        if (!combinedImprovements.endsWith(".")) {
+                            combinedImprovements = combinedImprovements + ".";
+                        }
+                    }
+                } else if (improvementsObj instanceof String) {
+                    combinedImprovements = (String) improvementsObj;
+                }
+            }
+            
+            // Create and save the communication results entity
+            CommunicationResults results = new CommunicationResults();
+            results.setUser(user);
+            results.setOverallScore(overallScore);
+            results.setStrengths(combinedStrengths);
+            results.setAreasForImprovement(combinedImprovements);
+            
+            communicationResultsRepository.save(results);
+            logger.info("Stored communication results for user " + user.getUsername());
+            
+        } catch (Exception e) {
+            logger.severe("Error storing communication results: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
