@@ -573,6 +573,18 @@ private final org.tukma.jobs.services.JobService jobService;
                 }
             }
             
+            // Delete any existing technical results for this user and access key
+            if (accessKey != null && !accessKey.isEmpty()) {
+                List<TechnicalResults> existingResults = 
+                    technicalResultsRepository.findByUser_IdAndAccessKeyOrderByCreatedAtDesc(user.getId(), accessKey);
+                
+                if (!existingResults.isEmpty()) {
+                    logger.info("Deleting " + existingResults.size() + " existing technical results for user " 
+                        + user.getUsername() + " and accessKey " + accessKey);
+                    technicalResultsRepository.deleteAll(existingResults);
+                }
+            }
+            
             // Process each graded question-answer pair
             for (Map<String, Object> gradedResponse : gradedResponses) {
                 String question = (String) gradedResponse.get("question");
@@ -655,6 +667,18 @@ private final org.tukma.jobs.services.JobService jobService;
             if (evaluation == null) {
                 logger.warning("Cannot store communication results: missing communication_evaluation data");
                 return;
+            }
+            
+            // Delete any existing communication results for this user and access key
+            if (accessKey != null && !accessKey.isEmpty()) {
+                List<CommunicationResults> existingResults = 
+                    communicationResultsRepository.findByUser_IdAndAccessKeyOrderByCreatedAtDesc(user.getId(), accessKey);
+                
+                if (!existingResults.isEmpty()) {
+                    logger.info("Deleting " + existingResults.size() + " existing communication results for user " 
+                        + user.getUsername() + " and accessKey " + accessKey);
+                    communicationResultsRepository.deleteAll(existingResults);
+                }
             }
             
             // Extract overall score
