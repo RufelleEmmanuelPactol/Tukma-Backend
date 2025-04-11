@@ -90,9 +90,22 @@ public class MessageProcessingService {
             // Step 3: Send the compsci-technical messages to the specialized model for grading
             Map<String, Object> gradingResult = gradeTechnicalMessages(technicalMessages, openAIKey);
             
+            // Step 3.5: Filter for standard messages and grade communication skills
+            List<Map<String, Object>> standardMessages = classifiedMessages.stream()
+                .filter(msg -> "standard".equals(msg.get("type")))
+                .toList();
+                
+            Map<String, Object> communicationResult = new HashMap<>();
+            if (!standardMessages.isEmpty()) {
+                communicationResult = gradeCommunicationSkills(standardMessages, openAIKey);
+            } else {
+                communicationResult.put("message", "No standard questions to grade communication skills");
+            }
+            
             // Step 4: Combine the classification and grading results
             Map<String, Object> result = new HashMap<>(classificationResult);
             result.put("gradingResult", gradingResult);
+            result.put("communicationResult", communicationResult);
             
             return result;
             
@@ -211,6 +224,103 @@ public class MessageProcessingService {
      * @param openAIKey API key for OpenAI
      * @return Grading results
      */
+    /**
+     * Grade communication skills based on standard messages
+     * 
+     * @param standardMessages List of standard question-answer pairs to evaluate
+     * @param openAIKey API key for OpenAI
+     * @return Communication skills assessment results
+     */
+    private Map<String, Object> gradeCommunicationSkills(List<Map<String, Object>> standardMessages, String openAIKey) throws Exception {
+        if (standardMessages.isEmpty()) {
+            return Map.of("message", "No standard messages to grade");
+        }
+        
+        // Format the messages for the grading model
+        StringBuilder promptBuilder = new StringBuilder();
+        promptBuilder.append("Please analyze the following interview question-answer pairs to evaluate communication skills. ");
+        promptBuilder.append("For each evaluation metric, provide a score and explanation. ");
+        promptBuilder.append("The metrics are: \n");
+        promptBuilder.append("* **Question-response relevance**: Score 1-5 how directly answers address questions\n");
+        promptBuilder.append("* **Information density**: Ratio of substantive content words to total words\n");
+        promptBuilder.append("* **Topic maintenance**: Track percentage of statements that stay on relevant topics\n");
+        promptBuilder.append("* **Specificity ratio**: Count of specific examples/details vs. generic statements\n");
+        promptBuilder.append("* **Clarification frequency**: Number of times asking for or providing clarification\n");
+        promptBuilder.append("* **Active vs. passive voice**: Percentage of sentences in active voice (higher typically better)\n");
+        promptBuilder.append("Return the evaluation in JSON format with the following structure: ");
+        promptBuilder.append("{\"communication_evaluation\": {\"metrics\": {\"question_response_relevance\": {\"score\": N, \"explanation\": \"...\"},");
+        promptBuilder.append(" \"information_density\": {\"ratio\": N.N, \"explanation\": \"...\"}}, ");
+        promptBuilder.append("\"overall_score\": N.N, \"strengths\": [\"...\"], \"areas_for_improvement\": [\"...\"]}}\n\n");
+        
+        // Add the standard message pairs
+        promptBuilder.append("Standard questions and answers to evaluate:\n\n");
+        for (Map<String, Object> msgPair : standardMessages) {
+            promptBuilder.append("Question: ").append(msgPair.get("question")).append("\n");
+            promptBuilder.append("Answer: ").append(msgPair.get("answer")).append("\n\n");
+        }
+        
+        // Create the OpenAI API request body
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("model", "gpt-4o-mini"); // Using a general-purpose model for communication assessment
+        
+        Map<String, Object> messageObj = new HashMap<>();
+        messageObj.put("role", "user");
+        messageObj.put("content", promptBuilder.toString());
+        
+        requestBody.put("messages", List.of(messageObj));
+        
+        // Convert to JSON
+        Gson gson = new Gson();
+        String jsonRequestBody = gson.toJson(requestBody);
+        
+        // Create HTTP client and request
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.openai.com/v1/chat/completions"))
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + openAIKey)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonRequestBody))
+                .build();
+        
+        // Send request and get response
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        
+        // Parse the response
+        Map<String, Object> responseMap = gson.fromJson(response.body(), Map.class);
+        
+        // Extract the communication evaluation result from the response
+        List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");
+        if (choices != null && !choices.isEmpty()) {
+            Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+            String content = (String) message.get("content");
+            
+            // Try to parse the content as JSON
+            try {
+                // First try parsing directly
+                Map<String, Object> parsedContent;
+                try {
+                    parsedContent = gson.fromJson(content, Map.class);
+                    return parsedContent;
+                } catch (Exception e) {
+                    // If direct parsing fails, try stripping markdown formatting
+                    logger.info("Direct JSON parsing failed for communication skills, trying to strip markdown formatting");
+                    String cleanedContent = stripMarkdownCodeBlock(content);
+                    parsedContent = gson.fromJson(cleanedContent, Map.class);
+                    return parsedContent;
+                }
+            } catch (Exception e) {
+                logger.warning("Failed to parse communication skills response as JSON: " + e.getMessage());
+                logger.info("Raw communication skills response content: " + content);
+                
+                // Return the raw content if parsing fails
+                return Map.of("rawCommunicationResponse", content);
+            }
+        }
+        
+        logger.warning("Unexpected response structure from communication skills evaluation API");
+        return Map.of("error", "Unexpected response structure from communication skills evaluation API");
+    }
+
     private Map<String, Object> gradeTechnicalMessages(List<Map<String, Object>> technicalMessages, String openAIKey) throws Exception {
         if (technicalMessages.isEmpty()) {
             return Map.of("message", "No technical messages to grade");
