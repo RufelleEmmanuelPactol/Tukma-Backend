@@ -11,4 +11,18 @@ import org.tukma.interview.models.Message;
 @AllArgsConstructor
 public class MessageRequest {
     private List<Message> messages;
+    
+    /**
+     * Optional job access key for linking results to a specific job application
+     */
+    private String accessKey;
+    
+    /**
+     * Constructor with just messages
+     * @param messages The list of messages
+     */
+    public MessageRequest(List<Message> messages) {
+        this.messages = messages;
+        this.accessKey = null;
+    }
 }

@@ -41,4 +41,33 @@ public interface CommunicationResultsRepository extends JpaRepository<Communicat
      * @return List of communication results with scores below the threshold
      */
     List<CommunicationResults> findByOverallScoreLessThanEqual(Double threshold);
+    
+    /**
+     * Find communication results for a specific job access key
+     * @param accessKey The job's access key
+     * @return List of communication results ordered by creation date (newest first)
+     */
+    List<CommunicationResults> findByAccessKeyOrderByCreatedAtDesc(String accessKey);
+    
+    /**
+     * Find communication results for a specific job
+     * @param jobId The job's ID
+     * @return List of communication results ordered by creation date (newest first)
+     */
+    List<CommunicationResults> findByJob_IdOrderByCreatedAtDesc(Long jobId);
+    
+    /**
+     * Find communication results for a specific user and job access key
+     * @param userId The user's ID
+     * @param accessKey The job's access key
+     * @return List of communication results ordered by creation date (newest first)
+     */
+    List<CommunicationResults> findByUser_IdAndAccessKeyOrderByCreatedAtDesc(Long userId, String accessKey);
+    
+    /**
+     * Find most recent communication result for a specific job access key
+     * @param accessKey The job's access key
+     * @return Optional containing the most recent result if available
+     */
+    Optional<CommunicationResults> findFirstByAccessKeyOrderByCreatedAtDesc(String accessKey);
 }

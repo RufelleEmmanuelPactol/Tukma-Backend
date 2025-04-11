@@ -28,11 +28,15 @@ public class MessageProcessingService {
 
     private final Environment environment;
     private final CommunicationResultsRepository communicationResultsRepository;
+    private final org.tukma.jobs.services.JobService jobService;
     private static final Logger logger = Logger.getLogger(MessageProcessingService.class.getName());
     
-    public MessageProcessingService(Environment environment, CommunicationResultsRepository communicationResultsRepository) {
+    public MessageProcessingService(Environment environment, 
+                                   CommunicationResultsRepository communicationResultsRepository,
+                                   org.tukma.jobs.services.JobService jobService) {
         this.environment = environment;
         this.communicationResultsRepository = communicationResultsRepository;
+        this.jobService = jobService;
     }
     
     /**
@@ -77,6 +81,19 @@ public class MessageProcessingService {
      * @return The processed messages along with classification and grading information
      */
     public Map<String, Object> processMessages(List<Message> messages, UserEntity currentUser) {
+        return processMessages(messages, currentUser, null);
+    }
+    
+    /**
+     * Process a list of messages by sending them to OpenAI's API for classification
+     * and grading the compsci-technical messages, and store the results in the database
+     * 
+     * @param messages List of messages to process
+     * @param currentUser The current authenticated user (may be null)
+     * @param accessKey The job access key (may be null)
+     * @return The processed messages along with classification and grading information
+     */
+    public Map<String, Object> processMessages(List<Message> messages, UserEntity currentUser, String accessKey) {
         logger.info("Processing " + messages.size() + " messages");
         
         String openAIKey = environment.getProperty("openai.key");
@@ -128,7 +145,7 @@ public class MessageProcessingService {
             
             // Store communication results if we have a valid user and communication data
             if (currentUser != null && communicationResult.containsKey("communication_evaluation")) {
-                storeCommunicationResults(communicationResult, currentUser);
+                storeCommunicationResults(communicationResult, currentUser, accessKey);
             }
             
             return result;
@@ -432,8 +449,9 @@ public class MessageProcessingService {
      * 
      * @param communicationResult The raw communication evaluation result from the API
      * @param user The user entity to associate with these results
+     * @param accessKey The job access key (may be null)
      */
-    private void storeCommunicationResults(Map<String, Object> communicationResult, UserEntity user) {
+    private void storeCommunicationResults(Map<String, Object> communicationResult, UserEntity user, String accessKey) {
         try {
             Map<String, Object> evaluation = (Map<String, Object>) communicationResult.get("communication_evaluation");
             if (evaluation == null) {
@@ -517,6 +535,20 @@ public class MessageProcessingService {
             results.setOverallScore(overallScore);
             results.setStrengths(combinedStrengths);
             results.setAreasForImprovement(combinedImprovements);
+            
+            // Set the accessKey if provided
+            if (accessKey != null && !accessKey.isEmpty()) {
+                results.setAccessKey(accessKey);
+                
+                // Try to fetch the job using accessKey and set it if found
+                org.tukma.jobs.models.Job job = jobService.getByAccessKey(accessKey);
+                if (job != null) {
+                    results.setJob(job);
+                } else {
+                    logger.warning("Could not find job for accessKey: " + accessKey);
+                    // Continue without setting the job reference
+                }
+            }
             
             communicationResultsRepository.save(results);
             logger.info("Stored communication results for user " + user.getUsername());

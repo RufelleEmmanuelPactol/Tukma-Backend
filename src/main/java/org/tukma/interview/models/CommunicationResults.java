@@ -4,12 +4,14 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.tukma.auth.models.UserEntity;
+import org.tukma.jobs.models.Job;
 
 import java.time.LocalDateTime;
 
 /**
  * Entity class for storing communication evaluation results from interviews.
  * This captures metrics related to a user's communication skills assessment.
+ * Now includes job access key for linking results to specific job applications.
  */
 @Entity
 @Getter
@@ -24,6 +26,13 @@ public class CommunicationResults {
     @ManyToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
     private UserEntity user;
+
+    @Column(nullable = true)
+    private String accessKey;
+    
+    @ManyToOne
+    @JoinColumn(name = "job_id", referencedColumnName = "id", nullable = true)
+    private Job job;
 
     @Column(nullable = false)
     private Double overallScore;
