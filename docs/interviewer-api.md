@@ -66,7 +66,8 @@ Process a batch of interview messages. This endpoint allows for sending multiple
       "timestamp": "2025-03-08T14:30:30.000Z",
       "role": "user"
     }
-  ]
+  ],
+  "accessKey": "abc-1234"  // Optional - job access key for linking results
 }
 ```
 
@@ -75,14 +76,237 @@ Process a batch of interview messages. This endpoint allows for sending multiple
 - `content`: The actual text content of the message
 - `timestamp`: ISO-8601 formatted timestamp
 - `role`: Role of the message sender (e.g., "user", "assistant", "system")
+- `accessKey`: Optional job access key to associate results with a specific job
 
 **Response:**
-- `200 OK`: Messages processed successfully
+- `200 OK`: Messages processed successfully with a map of processed results including classifications and evaluations
 
 **Authentication:**
 - This endpoint requires authentication. The user's identity is extracted from the security context.
 - If authenticated, the user information is logged along with the number of messages received.
 - If not authenticated, the request is still processed but logged as coming from an "unauthenticated user".
+
+### Process Interview Messages for Job
+
+```
+POST /api/v1/interview/messages/{accessKey}
+```
+
+Process a batch of interview messages for a specific job. This is similar to the general message processing endpoint but explicitly ties the messages to a specific job.
+
+**Parameters:**
+- `accessKey`: The job access key to associate with the messages
+
+**Request Body:**
+Same as the `/api/v1/interview/messages` endpoint, but the accessKey in the path takes precedence over any included in the request body.
+
+**Response:**
+Same as the `/api/v1/interview/messages` endpoint.
+
+### Get Communication Results for Job
+
+```
+GET /api/v1/interview/communication-results/job/{accessKey}
+```
+
+Retrieve all communication evaluation results for a specific job. This endpoint is intended for recruiters to view all communication assessments for a job posting.
+
+**Parameters:**
+- `accessKey`: The job access key
+
+**Response (Success - 200 OK):**
+```json
+{
+  "job": {
+    "id": 1,
+    "title": "Software Engineer",
+    "description": "We are looking for a talented software engineer...",
+    // other job fields
+  },
+  "communicationResults": [
+    {
+      "id": 1,
+      "user": {
+        "id": 3,
+        "username": "applicant@example.com",
+        "firstName": "John",
+        "lastName": "Doe"
+      },
+      "overallScore": 4.5,
+      "strengths": "Clear articulation of ideas. Good use of technical terminology.",
+      "areasForImprovement": "Could provide more concrete examples.",
+      "createdAt": "2025-03-10T10:00:00",
+      "updatedAt": "2025-03-10T10:00:00"
+    },
+    // additional results
+  ],
+  "count": 5
+}
+```
+
+**Response (Error):**
+- `404 Not Found`: If the job with the specified access key doesn't exist
+- `401 Unauthorized`: If the user is not authenticated
+- `403 Forbidden`: If the user is not the owner of the job
+
+### Get User Communication Results for Job
+
+```
+GET /api/v1/interview/communication-results/job/{accessKey}/user/{userId}
+```
+
+Get a specific user's communication result for a job. This can be used by both recruiters (to see a specific applicant) and applicants (to see their own result).
+
+**Parameters:**
+- `accessKey`: The job access key
+- `userId`: The user's ID
+
+**Response (Success - 200 OK):**
+```json
+{
+  "id": 1,
+  "user": {
+    "id": 3,
+    "username": "applicant@example.com",
+    "firstName": "John",
+    "lastName": "Doe"
+  },
+  "overallScore": 4.5,
+  "strengths": "Clear articulation of ideas. Good use of technical terminology.",
+  "areasForImprovement": "Could provide more concrete examples.",
+  "createdAt": "2025-03-10T10:00:00",
+  "updatedAt": "2025-03-10T10:00:00"
+}
+```
+
+**Response (Error):**
+- `404 Not Found`: If the job doesn't exist or no results found
+- `401 Unauthorized`: If the user is not authenticated
+- `403 Forbidden`: If the user is not authorized to view these results
+
+### Get My Communication Results for Job
+
+```
+GET /api/v1/interview/communication-results/my/{accessKey}
+```
+
+Convenience endpoint for applicants to get their own communication results for a specific job.
+
+**Parameters:**
+- `accessKey`: The job access key
+
+**Response:**
+Same as the `/api/v1/interview/communication-results/job/{accessKey}/user/{userId}` endpoint.
+
+**Response (Error):**
+- `404 Not Found`: If the job doesn't exist or no results found
+- `401 Unauthorized`: If the user is not authenticated
+
+### Get Technical Results for Job
+
+```
+GET /api/v1/interview/technical-results/job/{accessKey}
+```
+
+Retrieve all technical evaluation results for a specific job. This endpoint is intended for recruiters to view all technical assessments for a job posting.
+
+**Parameters:**
+- `accessKey`: The job access key
+
+**Response (Success - 200 OK):**
+```json
+{
+  "job": {
+    "id": 1,
+    "title": "Software Engineer",
+    "description": "We are looking for a talented software engineer...",
+    // other job fields
+  },
+  "technicalResults": [
+    {
+      "id": 1,
+      "user": {
+        "id": 3,
+        "username": "applicant@example.com",
+        "firstName": "John",
+        "lastName": "Doe"
+      },
+      "questionText": "Explain RESTful APIs",
+      "answerText": "REST stands for Representational State Transfer...",
+      "score": 8,
+      "feedback": "Good explanation with clear examples of REST principles",
+      "errors": "Minor confusion about statelessness concept",
+      "createdAt": "2025-03-10T10:05:00",
+      "updatedAt": "2025-03-10T10:05:00"
+    },
+    // additional results
+  ],
+  "count": 8
+}
+```
+
+**Response (Error):**
+- `404 Not Found`: If the job with the specified access key doesn't exist
+- `401 Unauthorized`: If the user is not authenticated
+- `403 Forbidden`: If the user is not the owner of the job
+
+### Get User Technical Results for Job
+
+```
+GET /api/v1/interview/technical-results/job/{accessKey}/user/{userId}
+```
+
+Get a specific user's technical results for a job. This can be used by both recruiters (to see a specific applicant) and applicants (to see their own results).
+
+**Parameters:**
+- `accessKey`: The job access key
+- `userId`: The user's ID
+
+**Response (Success - 200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "user": {
+      "id": 3,
+      "username": "applicant@example.com",
+      "firstName": "John",
+      "lastName": "Doe"
+    },
+    "questionText": "Explain RESTful APIs",
+    "answerText": "REST stands for Representational State Transfer...",
+    "score": 8,
+    "feedback": "Good explanation with clear examples of REST principles",
+    "errors": "Minor confusion about statelessness concept",
+    "createdAt": "2025-03-10T10:05:00",
+    "updatedAt": "2025-03-10T10:05:00"
+  },
+  // additional results for the same user
+]
+```
+
+**Response (Error):**
+- `404 Not Found`: If the job doesn't exist or no results found
+- `401 Unauthorized`: If the user is not authenticated
+- `403 Forbidden`: If the user is not authorized to view these results
+
+### Get My Technical Results for Job
+
+```
+GET /api/v1/interview/technical-results/my/{accessKey}
+```
+
+Convenience endpoint for applicants to get their own technical results for a specific job.
+
+**Parameters:**
+- `accessKey`: The job access key
+
+**Response:**
+Same as the `/api/v1/interview/technical-results/job/{accessKey}/user/{userId}` endpoint.
+
+**Response (Error):**
+- `404 Not Found`: If the job doesn't exist or no results found
+- `401 Unauthorized`: If the user is not authenticated
 
 ## WebSocket Protocol
 
