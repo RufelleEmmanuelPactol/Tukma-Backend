@@ -39,6 +39,9 @@ public class UserEntity implements UserDetails {
     @Column(nullable = false, columnDefinition = "boolean default true")
     private boolean isRecruiter;
 
+    @Column(nullable = true)
+    private Boolean hasJob;
+
 
 
 

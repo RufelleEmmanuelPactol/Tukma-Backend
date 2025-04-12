@@ -11,4 +11,8 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     Optional<UserEntity> findByUsername(String username);
+    
+    // Methods for finding users by hasJob status
+    List<UserEntity> findByHasJob(Boolean hasJob);
+    List<UserEntity> findByHasJobIsNull();
 }
