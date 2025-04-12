@@ -208,12 +208,14 @@ Same as the `/api/v1/interview/communication-results/job/{accessKey}/user/{userI
 GET /api/v1/interview/technical-results/job/{accessKey}
 ```
 
-Retrieve all technical evaluation results for a specific job. This endpoint is intended for recruiters to view all technical assessments for a job posting.
+Retrieve technical evaluation results for a specific job. This endpoint serves both recruiters and applicants:
+- Recruiters (job owners) can view all technical assessments for a job posting
+- Applicants can view their own results and aggregated statistics for the job
 
 **Parameters:**
 - `accessKey`: The job access key
 
-**Response (Success - 200 OK):**
+**Response for Recruiters (Success - 200 OK):**
 ```json
 {
   "job": {
@@ -241,14 +243,49 @@ Retrieve all technical evaluation results for a specific job. This endpoint is i
     },
     // additional results
   ],
-  "count": 8
+  "count": 8,
+  "overallScore": 7.25,
+  "isOwner": true
+}
+```
+
+**Response for Applicants (Success - 200 OK):**
+```json
+{
+  "job": {
+    "id": 1,
+    "title": "Software Engineer",
+    "description": "We are looking for a talented software engineer...",
+    // other job fields
+  },
+  "technicalResults": [
+    {
+      "id": 5,
+      "user": {
+        "id": 3,
+        "username": "applicant@example.com",
+        "firstName": "John",
+        "lastName": "Doe"
+      },
+      "questionText": "Explain RESTful APIs",
+      "answerText": "REST stands for Representational State Transfer...",
+      "score": 8,
+      "feedback": "Good explanation with clear examples of REST principles",
+      "errors": "Minor confusion about statelessness concept",
+      "createdAt": "2025-03-10T10:05:00",
+      "updatedAt": "2025-03-10T10:05:00"
+    }
+    // only this user's results
+  ],
+  "userScore": 7.5,
+  "averageScore": 6.8,
+  "isOwner": false
 }
 ```
 
 **Response (Error):**
-- `404 Not Found`: If the job with the specified access key doesn't exist
+- `404 Not Found`: If the job with the specified access key doesn't exist or no results found for the user
 - `401 Unauthorized`: If the user is not authenticated
-- `403 Forbidden`: If the user is not the owner of the job
 
 ### Get User Technical Results for Job
 
@@ -264,25 +301,35 @@ Get a specific user's technical results for a job. This can be used by both recr
 
 **Response (Success - 200 OK):**
 ```json
-[
-  {
-    "id": 1,
-    "user": {
-      "id": 3,
-      "username": "applicant@example.com",
-      "firstName": "John",
-      "lastName": "Doe"
+{
+  "technicalResults": [
+    {
+      "id": 1,
+      "user": {
+        "id": 3,
+        "username": "applicant@example.com",
+        "firstName": "John",
+        "lastName": "Doe"
+      },
+      "questionText": "Explain RESTful APIs",
+      "answerText": "REST stands for Representational State Transfer...",
+      "score": 8,
+      "feedback": "Good explanation with clear examples of REST principles",
+      "errors": "Minor confusion about statelessness concept",
+      "createdAt": "2025-03-10T10:05:00",
+      "updatedAt": "2025-03-10T10:05:00"
     },
-    "questionText": "Explain RESTful APIs",
-    "answerText": "REST stands for Representational State Transfer...",
-    "score": 8,
-    "feedback": "Good explanation with clear examples of REST principles",
-    "errors": "Minor confusion about statelessness concept",
-    "createdAt": "2025-03-10T10:05:00",
-    "updatedAt": "2025-03-10T10:05:00"
+    // additional results for the same user
+  ],
+  "count": 3,
+  "overallScore": 7.33,
+  "job": {
+    "id": 1,
+    "title": "Software Engineer",
+    // other job fields
   },
-  // additional results for the same user
-]
+  "isOwner": true  // or false if the viewer is the applicant themselves
+}
 ```
 
 **Response (Error):**
@@ -302,7 +349,7 @@ Convenience endpoint for applicants to get their own technical results for a spe
 - `accessKey`: The job access key
 
 **Response:**
-Same as the `/api/v1/interview/technical-results/job/{accessKey}/user/{userId}` endpoint.
+Same as the `/api/v1/interview/technical-results/job/{accessKey}/user/{userId}` endpoint, with `isOwner` always set to `false`.
 
 **Response (Error):**
 - `404 Not Found`: If the job doesn't exist or no results found
