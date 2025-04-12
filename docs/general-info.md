@@ -6,7 +6,7 @@ This document provides general information about the Tukma API, including authen
 
 Most API endpoints require authentication using the JWT token provided during login. However, the following endpoints are publicly accessible without authentication:
 
-- All authentication endpoints (`/api/v1/auth/**`)
+- All authentication endpoints (`/api/v1/auth/**`) except for user job status endpoints
 - Job listing for applicants (`/api/v1/jobs/get-all-jobs`)
 - Job search endpoint (`/api/v1/jobs/search`)
 - Job details (`/api/v1/jobs/get-job-details/{accessKey}`)
@@ -41,8 +41,8 @@ All other endpoints require a valid JWT token to be included in the request cook
 ## Common Model Information
 
 ### User Types
-- `Applicant (isApplicant=true)`: A job seeker who can upload resumes and apply to jobs
-- `Recruiter (isApplicant=false)`: A user who can create and manage job postings
+- `Applicant (isApplicant=true)`: A job seeker who can upload resumes and apply to jobs. Has a nullable `hasJob` field that indicates their current employment status (null = unspecified, true = employed, false = unemployed).
+- `Recruiter (isApplicant=false)`: A user who can create and manage job postings. Has a `hasJob` field that defaults to false.
 
 ### Job Types
 - `FULL_TIME`: Full-time employment
