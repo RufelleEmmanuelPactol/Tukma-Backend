@@ -1,6 +1,7 @@
 package org.tukma.interview.services;
 
 import org.springframework.stereotype.Service;
+import jakarta.annotation.PreDestroy;
 import org.tukma.interview.models.Message;
 
 import org.springframework.core.env.Environment;
@@ -18,6 +19,10 @@ import java.util.HashMap;
 import java.util.StringJoiner;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeoutException;
 
 import com.google.gson.Gson;
 import org.tukma.auth.models.UserEntity;
@@ -33,6 +38,7 @@ public class MessageProcessingService {
     private final CommunicationResultsRepository communicationResultsRepository;
     private final TechnicalResultsRepository technicalResultsRepository;
     private final org.tukma.jobs.services.JobService jobService;
+    private final ExecutorService executorService;
     private static final Logger logger = Logger.getLogger(MessageProcessingService.class.getName());
 
     public MessageProcessingService(Environment environment,
@@ -43,6 +49,30 @@ public class MessageProcessingService {
         this.communicationResultsRepository = communicationResultsRepository;
         this.technicalResultsRepository = technicalResultsRepository;
         this.jobService = jobService;
+        // Create a thread pool for async operations
+        this.executorService = Executors.newFixedThreadPool(4);
+        logger.info("Initialized executor service for async message processing");
+    }
+
+    /**
+     * Clean up method that shuts down the executor service when the application is
+     * closing
+     */
+    @PreDestroy
+    public void cleanup() {
+        logger.info("Shutting down executor service for async message processing");
+        executorService.shutdown();
+        try {
+            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+                if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                    logger.severe("Executor service did not terminate");
+                }
+            }
+        } catch (InterruptedException ie) {
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     /**
@@ -110,12 +140,74 @@ public class MessageProcessingService {
         String openAIKey = environment.getProperty("openai.key");
 
         try {
-            // Step 1: Classify messages as 'standard' or 'compsci-technical'
+            // Step 0: Start grammar correction for all answers asynchronously
+            List<CompletableFuture<String>> correctionFutures = new ArrayList<>();
+            List<String> correctedAnswers = new ArrayList<>();
+
+            // For each answer message (odd indices), start a correction task
+            for (int i = 1; i < messages.size(); i += 2) {
+                final int index = i;
+                String originalAnswer = messages.get(index).getContent();
+                correctedAnswers.add(originalAnswer); // Initially use original answer as placeholder
+
+                // Queue up grammar correction for each answer asynchronously
+                CompletableFuture<String> correctionFuture = CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return correctGrammarInAnswer(originalAnswer, openAIKey);
+                    } catch (Exception e) {
+                        logger.warning("Error correcting grammar for answer #" + index + ": " + e.getMessage());
+                        // Fall back to original answer if correction fails
+                        return originalAnswer;
+                    }
+                }, executorService);
+
+                correctionFutures.add(correctionFuture);
+            }
+
+            // Update messages with corrected answers as they become available
+            // This runs in parallel while we prepare and send the classification request
+            CompletableFuture<Void> allCorrectionsFuture = CompletableFuture.allOf(
+                    correctionFutures.toArray(new CompletableFuture[0]))
+                    .thenAccept(v -> {
+                        for (int i = 0; i < correctionFutures.size(); i++) {
+                            try {
+                                correctedAnswers.set(i, correctionFutures.get(i).get());
+                            } catch (Exception e) {
+                                logger.warning("Failed to get corrected answer #" + i + ": " + e.getMessage());
+                                // Keep the original answer that was set as placeholder
+                            }
+                        }
+                    });
+
+            // Step 1: Classify messages as 'standard' or 'compsci-technical' (with original
+            // answers for now)
             Map<String, Object> classificationResult = classifyMessages(messages, openAIKey);
 
             // Ensure the classification was successful
             if (classificationResult.containsKey("error") || classificationResult.containsKey("rawResponse")) {
                 return classificationResult; // Return early if classification failed
+            }
+
+            // Wait for grammar corrections to complete before proceeding with detailed
+            // analysis
+            try {
+                allCorrectionsFuture.get(30, TimeUnit.SECONDS); // Set a timeout to avoid blocking forever
+                logger.info("All grammar corrections completed successfully");
+
+                // Now we can update the answer messages with corrected text
+                for (int i = 0, answerIndex = 0; i < messages.size(); i += 2) {
+                    if (i + 1 < messages.size()) {
+                        Message originalMsg = messages.get(i + 1);
+                        Message correctedMsg = new Message();
+                        correctedMsg.setRole(originalMsg.getRole());
+                        correctedMsg.setContent(correctedAnswers.get(answerIndex++));
+                        // Replace the original message with corrected version
+                        messages.set(i + 1, correctedMsg);
+                    }
+                }
+            } catch (Exception e) {
+                logger.warning("Timed out or failed waiting for grammar corrections: " + e.getMessage());
+                // Continue with whatever corrections were completed
             }
 
             // Step 2: Extract compsci-technical message pairs for grading
@@ -135,34 +227,59 @@ public class MessageProcessingService {
             }
 
             // Step 3: Send the compsci-technical messages to the specialized model for
-            // grading
-            Map<String, Object> gradingResult = gradeTechnicalMessages(technicalMessages, openAIKey);
+            // grading (asynchronously)
+            CompletableFuture<Map<String, Object>> gradingResultFuture = CompletableFuture.supplyAsync(() -> {
+                try {
+                    return gradeTechnicalMessages(technicalMessages, openAIKey);
+                } catch (Exception e) {
+                    logger.severe("Error in async technical grading: " + e.getMessage());
+                    e.printStackTrace();
+                    return Map.of("error", "Failed to process technical messages: " + e.getMessage());
+                }
+            }, executorService);
 
             // Step 3.5: Filter for standard messages and grade communication skills
+            // (asynchronously)
             List<Map<String, Object>> standardMessages = classifiedMessages.stream()
                     .filter(msg -> "standard".equals(msg.get("type")))
                     .toList();
 
-            Map<String, Object> communicationResult = new HashMap<>();
-            if (!standardMessages.isEmpty()) {
-                communicationResult = gradeCommunicationSkills(standardMessages, openAIKey);
-            } else {
-                communicationResult.put("message", "No standard questions to grade communication skills");
-            }
+            CompletableFuture<Map<String, Object>> communicationResultFuture = CompletableFuture.supplyAsync(() -> {
+                try {
+                    if (!standardMessages.isEmpty()) {
+                        return gradeCommunicationSkills(standardMessages, openAIKey);
+                    } else {
+                        return Map.of("message", "No standard questions to grade communication skills");
+                    }
+                } catch (Exception e) {
+                    logger.severe("Error in async communication grading: " + e.getMessage());
+                    e.printStackTrace();
+                    return Map.of("error", "Failed to process communication messages: " + e.getMessage());
+                }
+            }, executorService);
+
+            // Wait for both futures to complete and get results
+            Map<String, Object> gradingResult = gradingResultFuture.join();
+            Map<String, Object> communicationResult = communicationResultFuture.join();
 
             // Step 4: Combine the classification and grading results
             Map<String, Object> result = new HashMap<>(classificationResult);
             result.put("gradingResult", gradingResult);
             result.put("communicationResult", communicationResult);
 
-            // Store communication results if we have a valid user and communication data
-            if (currentUser != null && communicationResult.containsKey("communication_evaluation")) {
-                storeCommunicationResults(communicationResult, currentUser, accessKey);
-            }
+            // Store results asynchronously if we have a valid user and data
+            if (currentUser != null) {
+                CompletableFuture.runAsync(() -> {
+                    if (communicationResult.containsKey("communication_evaluation")) {
+                        storeCommunicationResults(communicationResult, currentUser, accessKey);
+                    }
+                }, executorService);
 
-            // Store technical results if we have a valid user and grading data
-            if (currentUser != null && gradingResult.containsKey("graded_responses")) {
-                storeTechnicalResults(gradingResult, currentUser, accessKey);
+                CompletableFuture.runAsync(() -> {
+                    if (gradingResult.containsKey("graded_responses")) {
+                        storeTechnicalResults(gradingResult, currentUser, accessKey);
+                    }
+                }, executorService);
             }
 
             return result;
@@ -214,9 +331,10 @@ public class MessageProcessingService {
             String question = (i < messages.size()) ? messages.get(i).getContent() : "";
             String answer = (i + 1 < messages.size()) ? messages.get(i + 1).getContent() : "";
 
-            // Apply grammar correction to the answer
+            // Placeholder for the corrected answer, will be updated asynchronously
             if (i + 1 < messages.size()) {
-                answer = correctGrammarInAnswer(answer, openAIKey);
+                // We'll handle grammar correction asynchronously in a later step
+                // For now we keep the original answer
             }
 
             promptBuilder.append("Question: ").append(question).append("\n");
