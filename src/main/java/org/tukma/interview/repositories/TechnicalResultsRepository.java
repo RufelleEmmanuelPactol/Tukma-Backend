@@ -1,6 +1,8 @@
 package org.tukma.interview.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.tukma.interview.models.TechnicalResults;
 
@@ -62,12 +64,23 @@ public interface TechnicalResultsRepository extends JpaRepository<TechnicalResul
      * @param userId The user's ID
      * @return The average score or null if no results exist
      */
-    Double findAverageScoreByUser_Id(Long userId);
+    @Query("SELECT AVG(t.score) FROM TechnicalResults t WHERE t.user.id = :userId")
+    Double findAverageScoreByUser_Id(@Param("userId") Long userId);
     
     /**
      * Find the average score for a specific job access key across all applicants
      * @param accessKey The job's access key
      * @return The average score or null if no results exist
      */
-    Double findAverageScoreByAccessKey(String accessKey);
+    @Query("SELECT AVG(t.score) FROM TechnicalResults t WHERE t.accessKey = :accessKey")
+    Double findAverageScoreByAccessKey(@Param("accessKey") String accessKey);
+    
+    /**
+     * Find the average score for a specific user and job access key
+     * @param userId The user's ID
+     * @param accessKey The job's access key
+     * @return The average score or null if no results exist
+     */
+    @Query("SELECT AVG(t.score) FROM TechnicalResults t WHERE t.user.id = :userId AND t.accessKey = :accessKey")
+    Double findAverageScoreByUser_IdAndAccessKey(@Param("userId") Long userId, @Param("accessKey") String accessKey);
 }
