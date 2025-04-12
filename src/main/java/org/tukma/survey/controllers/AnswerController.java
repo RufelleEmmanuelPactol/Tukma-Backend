@@ -355,4 +355,40 @@ public class AnswerController {
                     .body(Map.of("error", "An error occurred: " + e.getMessage()));
         }
     }
+    
+    /**
+     * Check if the current user has completed the SUS survey (answered at least 10 unique questions)
+     * 
+     * @return Survey completion status
+     */
+    @GetMapping("/check-survey-completion")
+    public ResponseEntity<?> checkSurveyCompletion() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "You must be logged in to check survey completion"));
+        }
+        
+        UserEntity currentUser = (UserEntity) auth.getPrincipal();
+        
+        try {
+            // Get the SUS score which includes the number of answered questions
+            Map<String, Object> susData = answerService.calculateSusScore(currentUser.getId());
+            Integer answeredQuestions = (Integer) susData.get("answeredQuestions");
+            
+            // A standard SUS survey consists of 10 questions
+            boolean isComplete = answeredQuestions >= 10;
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("isComplete", isComplete);
+            response.put("answeredQuestions", answeredQuestions);
+            response.put("requiredQuestions", 10);
+            response.put("remainingQuestions", Math.max(0, 10 - answeredQuestions));
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "An error occurred: " + e.getMessage()));
+        }
+    }
 }

@@ -630,6 +630,42 @@ Get overall SUS statistics across all users (admin only).
 }
 ```
 
+### Check Survey Completion Status
+
+```
+GET /api/v1/survey/answers/check-survey-completion
+```
+
+Check if the current user has completed the SUS survey (answered at least 10 unique questions).
+
+**Response (Success - 200 OK):**
+```json
+{
+  "isComplete": true,
+  "answeredQuestions": 10,
+  "requiredQuestions": 10,
+  "remainingQuestions": 0
+}
+```
+
+Or for an incomplete survey:
+
+```json
+{
+  "isComplete": false,
+  "answeredQuestions": 7,
+  "requiredQuestions": 10,
+  "remainingQuestions": 3
+}
+```
+
+**Response (Error - 401 Unauthorized):**
+```json
+{
+  "error": "You must be logged in to check survey completion"
+}
+```
+
 ## Field Requirements
 
 ### Create/Update Question
