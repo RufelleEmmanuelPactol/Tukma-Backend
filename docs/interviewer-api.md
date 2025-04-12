@@ -121,7 +121,22 @@ Retrieve all communication evaluation results for a specific job. This endpoint 
     "id": 1,
     "title": "Software Engineer",
     "description": "We are looking for a talented software engineer...",
-    // other job fields
+    "address": "123 Main Street, San Francisco, CA 94105",
+    "accessKey": "abc-1234",
+    "type": "FULL_TIME",
+    "shiftType": "DAY_SHIFT",
+    "shiftLengthHours": 8,
+    "locationType": "ON_SITE",
+    "createdAt": "2025-03-08T09:00:00",
+    "updatedAt": "2025-03-08T09:00:00",
+    "owner": {
+      "id": 1,
+      "username": "recruiter@example.com",
+      "firstName": "Jane",
+      "lastName": "Recruiter",
+      "isRecruiter": true,
+      "companyName": "Acme Inc."
+    }
   },
   "communicationResults": [
     {
@@ -222,7 +237,22 @@ Retrieve technical evaluation results for a specific job. This endpoint serves b
     "id": 1,
     "title": "Software Engineer",
     "description": "We are looking for a talented software engineer...",
-    // other job fields
+    "address": "123 Main Street, San Francisco, CA 94105",
+    "accessKey": "abc-1234",
+    "type": "FULL_TIME",
+    "shiftType": "DAY_SHIFT",
+    "shiftLengthHours": 8,
+    "locationType": "ON_SITE",
+    "createdAt": "2025-03-08T09:00:00",
+    "updatedAt": "2025-03-08T09:00:00",
+    "owner": {
+      "id": 1,
+      "username": "recruiter@example.com",
+      "firstName": "Jane",
+      "lastName": "Recruiter",
+      "isRecruiter": true,
+      "companyName": "Acme Inc."
+    }
   },
   "technicalResults": [
     {
@@ -256,7 +286,22 @@ Retrieve technical evaluation results for a specific job. This endpoint serves b
     "id": 1,
     "title": "Software Engineer",
     "description": "We are looking for a talented software engineer...",
-    // other job fields
+    "address": "123 Main Street, San Francisco, CA 94105",
+    "accessKey": "abc-1234",
+    "type": "FULL_TIME",
+    "shiftType": "DAY_SHIFT",
+    "shiftLengthHours": 8,
+    "locationType": "ON_SITE",
+    "createdAt": "2025-03-08T09:00:00",
+    "updatedAt": "2025-03-08T09:00:00",
+    "owner": {
+      "id": 1,
+      "username": "recruiter@example.com",
+      "firstName": "Jane",
+      "lastName": "Recruiter",
+      "isRecruiter": true,
+      "companyName": "Acme Inc."
+    }
   },
   "technicalResults": [
     {
@@ -326,7 +371,23 @@ Get a specific user's technical results for a job. This can be used by both recr
   "job": {
     "id": 1,
     "title": "Software Engineer",
-    // other job fields
+    "description": "We are looking for a talented software engineer...",
+    "address": "123 Main Street, San Francisco, CA 94105",
+    "accessKey": "abc-1234",
+    "type": "FULL_TIME",
+    "shiftType": "DAY_SHIFT",
+    "shiftLengthHours": 8,
+    "locationType": "ON_SITE",
+    "createdAt": "2025-03-08T09:00:00",
+    "updatedAt": "2025-03-08T09:00:00",
+    "owner": {
+      "id": 1,
+      "username": "recruiter@example.com",
+      "firstName": "Jane",
+      "lastName": "Recruiter",
+      "isRecruiter": true,
+      "companyName": "Acme Inc."
+    }
   },
   "isOwner": true  // or false if the viewer is the applicant themselves
 }
