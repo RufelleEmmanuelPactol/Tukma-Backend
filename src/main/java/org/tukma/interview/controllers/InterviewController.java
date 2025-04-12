@@ -203,9 +203,10 @@ public class InterviewController {
     /**
      * Get technical results for a specific job access key
      * This is useful for recruiters to see all technical evaluations for a specific job
+     * Applicants can also see aggregated results (without individual details of other applicants)
      * 
      * @param accessKey The job's access key
-     * @return List of technical results for the job
+     * @return List of technical results for the job or aggregated stats for applicants
      */
     @GetMapping("/technical-results/job/{accessKey}")
     public ResponseEntity<?> getTechnicalResultsByJobAccessKey(@PathVariable String accessKey) {
@@ -225,20 +226,68 @@ public class InterviewController {
         
         UserEntity currentUser = (UserEntity) auth.getPrincipal();
         
-        // Verify user is the job owner (only recruiters/job owners should see all results)
-        if (!job.getOwner().getId().equals(currentUser.getId())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "You are not authorized to view these technical results"));
+        // Check if user is the job owner
+        boolean isJobOwner = job.getOwner().getId().equals(currentUser.getId());
+        
+        // If user is not the job owner, they can only see aggregated results
+        if (!isJobOwner) {
+            // For applicants, show their own results with some aggregated stats
+            // First, check if they have results for this job
+            List<TechnicalResults> userResults = technicalResultsRepository
+                    .findByUser_IdAndAccessKeyOrderByCreatedAtDesc(currentUser.getId(), accessKey);
+            
+            if (userResults.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "No technical results found for you in this job"));
+            }
+            
+            // Get aggregate stats
+            Double overallAverage = technicalResultsRepository.findAverageScoreByAccessKey(accessKey);
+            if (overallAverage == null) {
+                overallAverage = 0.0;
+            } else {
+                overallAverage = Math.round(overallAverage * 100.0) / 100.0;
+            }
+            
+            // Calculate user's average
+            Double userAverage = technicalResultsRepository.findAverageScoreByUser_IdAndAccessKey(
+                    currentUser.getId(), accessKey);
+            if (userAverage == null) {
+                userAverage = 0.0;
+            } else {
+                userAverage = Math.round(userAverage * 100.0) / 100.0;
+            }
+            
+            // Return the results for the applicant
+            Map<String, Object> response = new HashMap<>();
+            response.put("job", job);
+            response.put("technicalResults", userResults);
+            response.put("userScore", userAverage);
+            response.put("averageScore", overallAverage);
+            response.put("isOwner", false);
+            
+            return ResponseEntity.ok(response);
         }
         
         // Get all technical results for this job
         List<TechnicalResults> results = technicalResultsRepository.findByAccessKeyOrderByCreatedAtDesc(accessKey);
         
-        // Return the results with the job information
+        // Calculate the overall score using the repository method
+        Double overallScore = technicalResultsRepository.findAverageScoreByAccessKey(accessKey);
+        // Handle null result and round to 2 decimal places
+        if (overallScore == null) {
+            overallScore = 0.0;
+        } else {
+            overallScore = Math.round(overallScore * 100.0) / 100.0;
+        }
+        
+        // Return the results with the job information and overall score
         Map<String, Object> response = new HashMap<>();
         response.put("job", job);
         response.put("technicalResults", results);
         response.put("count", results.size());
+        response.put("overallScore", overallScore);
+        response.put("isOwner", true);
         
         return ResponseEntity.ok(response);
     }
@@ -292,8 +341,25 @@ public class InterviewController {
                     .body(Map.of("error", "No technical results found for this user and job"));
         }
         
-        // Return all results for this user and job
-        return ResponseEntity.ok(results);
+        // Calculate the overall score using the repository method
+        Double overallScore = technicalResultsRepository.findAverageScoreByUser_IdAndAccessKey(userId, accessKey);
+        // Handle null result and round to 2 decimal places
+        if (overallScore == null) {
+            overallScore = 0.0;
+        } else {
+            overallScore = Math.round(overallScore * 100.0) / 100.0;
+        }
+        
+        // Create a response map with results and overall score
+        Map<String, Object> response = new HashMap<>();
+        response.put("technicalResults", results);
+        response.put("count", results.size());
+        response.put("overallScore", overallScore);
+        response.put("job", job);
+        response.put("isOwner", isJobOwner);
+        
+        // Return all results for this user and job with the overall score
+        return ResponseEntity.ok(response);
     }
     
     /**
