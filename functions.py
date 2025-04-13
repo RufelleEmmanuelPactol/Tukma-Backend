@@ -143,7 +143,7 @@ def get_applicants(access_key):
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT DISTINCT name, email
+            SELECT DISTINCT name, email, is_finished
             FROM messages 
             WHERE access_key = ? 
             ORDER BY name, email ASC -- Ordering might not be meaningful with DISTINCT name, email
@@ -154,7 +154,7 @@ def get_applicants(access_key):
         applicants_list = cursor.fetchall() 
 
     # Format if desired, e.g., list of dicts [{'name': n, 'email': e}, ...]
-    formatted_applicants = [{"name": name, "email": email} for name, email in applicants_list]
+    formatted_applicants = [{"name": name, "email": email, "is_finished": is_finished} for name, email, is_finished in applicants_list]
 
     # Added colon in status key name for consistency
     return formatted_applicants
