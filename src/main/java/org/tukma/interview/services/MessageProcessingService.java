@@ -615,12 +615,12 @@ public class MessageProcessingService {
         promptBuilder.append(
                 " You are an essay grader assistant for technical coding in a technical interview, give the rating based on technical accuracy and communication efficiency.");
         promptBuilder.append(
-                "In here, you are required to grade the answer following a specific schema, with a score from 0 to 100.");
+                "In here, you are required to grade the answer following a specific schema, with a score from 0 to 100, where 0 is the worst and 100 is perfect.");
         promptBuilder.append(
-                "Grades should not be afraid to use floats and numbers NOT divisible by 5 for the sake of granularity");
+                "Make full use of the 0-100 range. Grades should not be afraid to use any number in this range, including floats and numbers NOT divisible by 5 for the sake of granularity");
         promptBuilder.append("Please grade the following computer science/technical question and answer pairs. ");
         promptBuilder.append(
-                "Return results in this JSON format: {\"graded_responses\": [{\"question\": \"...\", \"answer\": \"...\", \"score\": 0-10, \"feedback\": \"...\", \"errors\": [\"error1\", \"error2\"]}]}\n\n");
+                "Return results in this JSON format: {\"graded_responses\": [{\"question\": \"...\", \"answer\": \"...\", \"score\": 0-100, \"feedback\": \"...\", \"errors\": [\"error1\", \"error2\"]}]}\n\n");
 
         // Add the technical message pairs
         promptBuilder.append("Technical questions and answers to grade:\n\n");
@@ -871,11 +871,11 @@ public class MessageProcessingService {
                     if (scoreObj instanceof Number) {
                         score = ((Number) scoreObj).intValue();
 
-                        // Ensure score is in the 1-10 range
-                        if (score > 10) {
-                            score = 10; // Cap at 10
-                        } else if (score < 1) {
-                            score = 1; // Minimum of 1
+                        // Ensure score is in the 0-100 range
+                        if (score > 100) {
+                            score = 100; // Cap at 100
+                        } else if (score < 0) {
+                            score = 0; // Minimum of 0
                         }
                     }
                 }
