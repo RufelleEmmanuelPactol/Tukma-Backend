@@ -2,6 +2,13 @@
 
 This document details the interviewer endpoints and WebSocket protocol for the Tukma application.
 
+## Scoring Scales
+
+The Tukma API uses the following scoring scales:
+
+- **Technical Skills**: Scores range from 0-100, where 0 is poor and 100 is excellent
+- **Communication Skills**: Scores range from 1-10, where 1 is poor and 10 is excellent
+
 ## REST Endpoints
 
 ### Request WebSocket Connection
@@ -265,7 +272,7 @@ Retrieve technical evaluation results for a specific job. This endpoint serves b
       },
       "questionText": "Explain RESTful APIs",
       "answerText": "REST stands for Representational State Transfer...",
-      "score": 8,
+      "score": 80,
       "feedback": "Good explanation with clear examples of REST principles",
       "errors": "Minor confusion about statelessness concept",
       "createdAt": "2025-03-10T10:05:00",
@@ -274,7 +281,7 @@ Retrieve technical evaluation results for a specific job. This endpoint serves b
     // additional results
   ],
   "count": 8,
-  "overallScore": 7.25,
+  "overallScore": 72.5,
   "isOwner": true
 }
 ```
@@ -314,7 +321,7 @@ Retrieve technical evaluation results for a specific job. This endpoint serves b
       },
       "questionText": "Explain RESTful APIs",
       "answerText": "REST stands for Representational State Transfer...",
-      "score": 8,
+      "score": 80,
       "feedback": "Good explanation with clear examples of REST principles",
       "errors": "Minor confusion about statelessness concept",
       "createdAt": "2025-03-10T10:05:00",
@@ -322,8 +329,8 @@ Retrieve technical evaluation results for a specific job. This endpoint serves b
     }
     // only this user's results
   ],
-  "userScore": 7.5,
-  "averageScore": 6.8,
+  "userScore": 75.0,
+  "averageScore": 68.0,
   "isOwner": false
 }
 ```
@@ -367,7 +374,7 @@ Get a specific user's technical results for a job. This can be used by both recr
     // additional results for the same user
   ],
   "count": 3,
-  "overallScore": 7.33,
+  "overallScore": 73.3,
   "job": {
     "id": 1,
     "title": "Software Engineer",

@@ -319,6 +319,8 @@ public class MessageProcessingService {
         StringBuilder promptBuilder = new StringBuilder();
         promptBuilder.append(
                 "Classify each question and answer pair as either 'standard' or 'compsci-technical'. Do not include the introductory questions. ");
+        promptBuilder
+                .append("Please make sure the question is actually a question, and the answer is actually an answer.");
         promptBuilder.append(
                 "Do not include the system's end interview message, which is typically the last message in the transcript. ");
         promptBuilder.append("Return a JSON array in this exact format: ");
@@ -610,11 +612,15 @@ public class MessageProcessingService {
 
         // Format the messages for the grading model
         StringBuilder promptBuilder = new StringBuilder();
+        promptBuilder.append(
+                " You are an essay grader assistant for technical coding in a technical interview, give the rating based on technical accuracy and communication efficiency.");
+        promptBuilder.append(
+                "In here, you are required to grade the answer following a specific schema, with a score from 0 to 100, where 0 is the worst and 100 is perfect.");
+        promptBuilder.append(
+                "Make full use of the 0-100 range. Grades should not be afraid to use any number in this range, including floats and numbers NOT divisible by 5 for the sake of granularity");
         promptBuilder.append("Please grade the following computer science/technical question and answer pairs. ");
         promptBuilder.append(
-                "For each answer, provide a score from 0-10, detailed feedback, and highlight any misconceptions or errors. ");
-        promptBuilder.append(
-                "Return results in this JSON format: {\"graded_responses\": [{\"question\": \"...\", \"answer\": \"...\", \"score\": 0-10, \"feedback\": \"...\", \"errors\": [\"error1\", \"error2\"]}]}\n\n");
+                "Return results in this JSON format: {\"graded_responses\": [{\"question\": \"...\", \"answer\": \"...\", \"score\": 0-100, \"feedback\": \"...\", \"errors\": [\"error1\", \"error2\"]}]}\n\n");
 
         // Add the technical message pairs
         promptBuilder.append("Technical questions and answers to grade:\n\n");
@@ -630,8 +636,7 @@ public class MessageProcessingService {
 
         // Create the OpenAI API request body
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", "ft:gpt-4o-mini-2024-07-18:personal:cs-mini-2:B9HBRWzs"); // Using the specialized
-                                                                                           // model
+        requestBody.put("model", "gpt-4o");
 
         Map<String, Object> messageObj = new HashMap<>();
         messageObj.put("role", "user");
@@ -748,6 +753,10 @@ public class MessageProcessingService {
             promptBuilder
                     .append("typos, awkward phrasing, or incorrect word usage. Do not add or remove any substantive ");
             promptBuilder.append("information or change technical details. Return only the corrected text.\n\n");
+            promptBuilder
+                    .append("If you think the user meant to say a technical term, correct it to the correct technical term.");
+            promptBuilder
+                    .append("Give the full answer, do not use ellipsis.");
             promptBuilder.append("Answer to correct: ").append(answer);
 
             // Create the OpenAI API request body
@@ -862,11 +871,11 @@ public class MessageProcessingService {
                     if (scoreObj instanceof Number) {
                         score = ((Number) scoreObj).intValue();
 
-                        // Ensure score is in the 1-10 range
-                        if (score > 10) {
-                            score = 10; // Cap at 10
-                        } else if (score < 1) {
-                            score = 1; // Minimum of 1
+                        // Ensure score is in the 0-100 range
+                        if (score > 100) {
+                            score = 100; // Cap at 100
+                        } else if (score < 0) {
+                            score = 0; // Minimum of 0
                         }
                     }
                 }
