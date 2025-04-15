@@ -320,7 +320,9 @@ public class MessageProcessingService {
         promptBuilder.append(
                 "Classify each question and answer pair as either 'standard' or 'compsci-technical'. Do not include the introductory questions. ");
         promptBuilder
-                .append("Make sure the question is actually a question, and the answer is actually an answer.");
+                .append("Please make sure the question is actually a question, and the answer is actually an answer.");
+        promptBuilder
+                .append("The question should be made by the interviewer, and the answer should be made by the interviewee.");
         promptBuilder.append(
                 "Do not include the system's end interview message, which is typically the last message in the transcript. ");
         promptBuilder.append("Return a JSON array in this exact format: ");
@@ -477,6 +479,9 @@ public class MessageProcessingService {
         promptBuilder.append("For each evaluation metric, provide a score and explanation. ");
         promptBuilder.append(
                 "Ensure that the overall_score is explicitly on a scale of 1-10, where 1 is poor and 10 is excellent. ");
+        promptBuilder.append("IMPORTANT: Do not judge or evaluate the responses based on grammatical correctness. ");
+        promptBuilder.append(
+                "Focus on the clarity of ideas, relevance of answers, and effective communication of concepts regardless of grammar. ");
         promptBuilder.append("The metrics are: \n");
         promptBuilder.append("* **Question-response relevance**: Score 1-5 how directly answers address questions\n");
         promptBuilder.append("* **Information density**: Ratio of substantive content words to total words\n");
@@ -619,6 +624,8 @@ public class MessageProcessingService {
         promptBuilder.append(
                 "Make full use of the 0-100 range. Grades should not be afraid to use any number in this range, including floats and numbers NOT divisible by 5 for the sake of granularity");
         promptBuilder.append("Please grade the following computer science/technical question and answer pairs. ");
+        promptBuilder.append("IMPORTANT: Do not judge or grade the answers based on grammatical correctness. ");
+        promptBuilder.append("Focus only on technical accuracy, concept understanding, and solution correctness. ");
         promptBuilder.append(
                 "Return results in this JSON format: {\"graded_responses\": [{\"question\": \"...\", \"answer\": \"...\", \"score\": 0-100, \"feedback\": \"...\", \"errors\": [\"error1\", \"error2\"]}]}\n\n");
 
@@ -749,7 +756,8 @@ public class MessageProcessingService {
             StringBuilder promptBuilder = new StringBuilder();
             promptBuilder.append("Do not correct the grammar and spelling in the following interview answer.");
             promptBuilder.append("They are not important as much as being able to deliver quality.");
-            promptBuilder.append("Because the text in the input is not from text input mediums but rather through transcripts, be lenient in cases where it might sometimes make sense, as it is possible that the transcription module misheard the details");
+            promptBuilder.append(
+                    "Because the text in the input is not from text input mediums but rather through transcripts, be lenient in cases where it might sometimes make sense, as it is possible that the transcription module misheard the details");
             promptBuilder.append("Return only the corrected text");
             promptBuilder
                     .append("If you think the user meant to say a technical term, correct it to the correct technical term.");
