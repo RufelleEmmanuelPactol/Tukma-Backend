@@ -1,8 +1,10 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, url_for, send_from_directory
 from openai import OpenAI
 from dotenv import load_dotenv
+from pathlib import Path
+from datetime import datetime
 import os
-from functions import check_record, init_db, insert_msg, get_messages, get_history, get_applicants, done_interviews, check_interview, debug, initial_msg
+from functions import check_record, init_db, insert_msg, get_messages, get_history, get_applicants, done_interviews, check_interview, debug, initial_msg, AUDIO_DIR, delete_old_files
 
 load_dotenv()
 
@@ -117,7 +119,43 @@ def debug_route():
     result = debug()
     return jsonify({"result": result})
 
-    
+
+@app.route("/generate_audio", methods=["POST"])
+def generate_audio():
+    data = request.get_json()
+    text = data.get("text")
+
+    if not text:
+        return jsonify({"error": "no text provided"}), 400
+        
+    filename = datetime.now().strftime("%Y%m%d_%H%M%S") + ".mp3"
+    speech_file = Path(AUDIO_DIR)/ filename
+    try:
+        with client.audio.speech.with_streaming_response.create(
+            model="gpt-4o-mini-tts",
+            voice="alloy",
+            input=text,
+            instructions="Speak in a calm, confident tone as if you're hosting a professional interview or podcast. Use natural pacing and emphasize key phrases slightly to keep the listener engaged.",
+        ) as response:
+            response.stream_to_file(speech_file)
+
+        delete_old_files()
+
+        audio_url = url_for("serve_audio", filename=filename, _external=True)
+
+
+        return jsonify({"audio_url": audio_url}), 200
+
+    except Exception as e:
+        # Handle potential API errors
+        print(f"Error calling OpenAI or processing reply: {e}") # Log error
+        return jsonify({"error": "Failed to get response from AI"}), 500
+
+        
+@app.route("/audio/<filename>")
+def serve_audio(filename):
+    return send_from_directory(AUDIO_DIR, filename)
+        
 
 if __name__ == "__main__":
     # Initialize the database when the app starts
