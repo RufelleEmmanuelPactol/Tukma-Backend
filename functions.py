@@ -1,15 +1,30 @@
 from flask import jsonify
+from pathlib import Path
 from datetime import datetime
 import sqlite3
 import os
+import time
 
 PROD_DB = "/app/tukma/messages.db"
 LOCAL_DB = "./app/tukma/messages.db"
+PROD_AUDIO = "/app/tukma/audio/"
+LOCAL_AUDIO = "./app/tukma/audio/"
+
 DATABASE = PROD_DB 
+AUDIO_DIR = PROD_AUDIO
 
 def init_db():
     db_dir = os.path.dirname(DATABASE)
-    os.makedirs(db_dir, exist_ok=True)
+    try:
+        os.makedirs(db_dir, exist_ok=True)
+    except Exception as e:
+        print(f"Error creating database directory: {e}")
+
+    audio_dir = os.path.dirname(AUDIO_DIR)
+    try:
+        os.makedirs(audio_dir, exist_ok=True)
+    except Exception as e:
+        print(f"Error creating audio directory: {e}")
 
     conn = None # Initialize conn outside try for the finally block
     try:
@@ -223,3 +238,14 @@ def debug():
         results = cursor.fetchall()  # Fetch all results
         
     return results  # Returns a list of all records in the messages table
+
+    
+def delete_old_files():
+    current_time = time.time()
+    for file in Path(AUDIO_DIR).glob("*.mp3"):
+        if current_time - file.stat().st_mtime > 60:  # Files older than 1 minute
+            try:
+                os.remove(file)
+                print(f"[✓] Deleted {file}")
+            except Exception as e:
+                print(f"[!] Error deleting {file}: {e}")
