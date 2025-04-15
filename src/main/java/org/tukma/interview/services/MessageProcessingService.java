@@ -754,12 +754,11 @@ public class MessageProcessingService {
         try {
             // Format the prompt for grammar correction
             StringBuilder promptBuilder = new StringBuilder();
-            promptBuilder.append("Please correct the grammar and spelling in the following interview answer. ");
-            promptBuilder
-                    .append("Maintain the original meaning and technical content, but fix any grammatical errors, ");
-            promptBuilder
-                    .append("typos, awkward phrasing, or incorrect word usage. Do not add or remove any substantive ");
-            promptBuilder.append("information or change technical details. Return only the corrected text.\n\n");
+            promptBuilder.append("Do not correct the grammar and spelling in the following interview answer.");
+            promptBuilder.append("They are not important as much as being able to deliver quality.");
+            promptBuilder.append(
+                    "Because the text in the input is not from text input mediums but rather through transcripts, be lenient in cases where it might sometimes make sense, as it is possible that the transcription module misheard the details");
+            promptBuilder.append("Return only the corrected text");
             promptBuilder
                     .append("If you think the user meant to say a technical term, correct it to the correct technical term.");
             promptBuilder
