@@ -565,6 +565,71 @@ Cleans up duplicate resumes that have the same job and owner combinations by kee
 - `uniqueCombinationsWithDuplicates`: Number of job-owner combinations that had duplicates
 - `duplicateCombinations`: Array of arrays containing [jobId, ownerId, numberOfDuplicates] for combinations that had duplicates
 
+### Get All Similarity Scores
+
+```
+GET /api/v1/resume/all-similarity-scores
+```
+
+Retrieves similarity scores for all resumes in the database. This endpoint does not require authentication and is intended for research purposes only. It fetches the most current scores from the microservice for each resume and updates the database with the latest results.
+
+**Response (Success - 200 OK):**
+```json
+{
+  "total": 25,
+  "scores": [
+    {
+      "resumeId": 1,
+      "resumeHash": "d8e8fca2dc0f896fd7cb4cb0031ba249",
+      "jobId": 5,
+      "score": {
+        "javascript": {
+          "similarity_score": 0.7,
+          "best_matching_ngram": "JavaScript developer with 5 years"
+        },
+        "react": {
+          "similarity_score": 0.65,
+          "best_matching_ngram": "React development"
+        },
+        "node.js": {
+          "similarity_score": 0.55,
+          "best_matching_ngram": "Node.js backend applications"
+        }
+      }
+    },
+    {
+      "resumeId": 2,
+      "resumeHash": "a87ff679a2f3e71d9181a67b7542122c",
+      "jobId": 7,
+      "score": {
+        "python": {
+          "similarity_score": 0.8,
+          "best_matching_ngram": "Python developer"
+        },
+        "ml": {
+          "similarity_score": 0.75,
+          "best_matching_ngram": "Machine learning algorithms"
+        },
+        "data science": {
+          "similarity_score": 0.7,
+          "best_matching_ngram": "Data science projects"
+        }
+      }
+    }
+  ]
+}
+```
+
+**Response Fields:**
+- `total`: The total number of resumes with valid similarity scores
+- `scores`: Array of resume score objects with minimal identifying information
+  - `resumeId`: The database ID of the resume
+  - `resumeHash`: The unique hash identifier of the resume
+  - `jobId`: The database ID of the associated job
+  - `score`: The current similarity score results from the microservice
+
+**Note:** This endpoint may take longer to respond with large datasets as it makes an API call to the microservice for each resume.
+
 ## Internal Processing
 
 The Resume API utilizes the following internal processing flow:
