@@ -26,10 +26,12 @@ import org.tukma.resume.services.ResumeClientService;
 import org.tukma.resume.services.ResumeDataService;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 
@@ -411,5 +413,46 @@ public class ResumeController {
     public ResponseEntity<?> cleanupDuplicateResumes() {
         Map<String, Object> result = resumeDataService.cleanupDuplicateResumes();
         return ResponseEntity.ok(result);
+    }
+    
+    /**
+     * Get similarity scores for all resumes in the database without security checks
+     * This endpoint is intended for research purposes only and returns minimal identifying information
+     *
+     * @return List of all resumes with their similarity scores
+     */
+    @GetMapping("/all-similarity-scores")
+    public ResponseEntity<?> getAllSimilarityScores() {
+        List<Resume> allResumes = resumeDataService.getAllResumes();
+        
+        List<Map<String, Object>> scoresData = new ArrayList<>();
+        
+        for (Resume resume : allResumes) {
+            // Get current similarity score from the microservice
+            SimilarityScoreResponse scoreResponse = resumeClientService.getSimilarityScore(resume.getResumeHash()).block();
+            
+            if (scoreResponse != null && scoreResponse.getResult() != null) {
+                Map<String, Object> scoreInfo = new HashMap<>();
+                scoreInfo.put("resumeId", resume.getId());
+                scoreInfo.put("resumeHash", resume.getResumeHash());
+                scoreInfo.put("jobId", resume.getJob().getId());
+                scoreInfo.put("score", scoreResponse.getResult());
+                
+                // Store the updated result in the database
+                resumeDataService.saveResumeData(
+                    resume.getResumeHash(),
+                    scoreResponse.getResult().toString(),
+                    resume.getJob().getId(),
+                    resume.getOwner().getId()
+                );
+                
+                scoresData.add(scoreInfo);
+            }
+        }
+            
+        return ResponseEntity.ok(Map.of(
+            "total", scoresData.size(),
+            "scores", scoresData
+        ));
     }
 }

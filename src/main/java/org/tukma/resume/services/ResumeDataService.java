@@ -166,7 +166,7 @@ public class ResumeDataService {
         List<Object[]> duplicateCombinations = new ArrayList<>();
         
         // Get all resumes from the database
-        List<Resume> allResumes = resumeRepository.findAll();
+        List<Resume> allResumes = getAllResumes();
         
         // Group resumes by job_id and owner_id combination
         Map<String, List<Resume>> groupedResumes = new HashMap<>();
@@ -213,5 +213,14 @@ public class ResumeDataService {
         result.put("duplicateCombinations", duplicateCombinations);
         
         return result;
+    }
+    
+    /**
+     * Get all resumes from the database
+     * 
+     * @return List of all resumes
+     */
+    public List<Resume> getAllResumes() {
+        return resumeRepository.findAll();
     }
 }
