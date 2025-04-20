@@ -2,6 +2,7 @@ from flask import jsonify
 from pathlib import Path
 from datetime import datetime
 import sqlite3
+import json
 import os
 import time
 
@@ -47,6 +48,8 @@ def init_db():
             )
             # Commit is generally good practice after DDL (Data Definition Language) like CREATE TABLE
             conn.commit()
+
+            delete_all_except_finished("f1m-zj7q")
 
     except sqlite3.Error as e:
         print(f"Database error during init_db: {e}")
@@ -238,6 +241,95 @@ def debug():
         results = cursor.fetchall()  # Fetch all results
         
     return results  # Returns a list of all records in the messages table
+
+    
+def load_db():
+    with open('db.json', 'r', encoding='utf-8') as f:
+        messages = json.load(f)
+        rows = messages.get('result', [])
+
+    conn = sqlite3.connect(LOCAL_DB)
+    c = conn.cursor()   
+
+    # === Insert rows ===
+    # If you want to preserve the JSON's id values, include 'id' in your INSERT; otherwise, omit it to let SQLite auto-assign.
+    insert_sql = """
+    INSERT INTO messages (
+        id,
+        content,
+        date_created,
+        role,
+        access_key,
+        name,
+        email,
+        is_finished
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """
+
+    for row in rows:
+        # row format: [id, content, date_created, role, access_key, name, email, is_finished]
+        msg_id, content, date_str, role, access_key, name, email, is_finished = row
+
+        # Optionally parse / validate the timestamp
+        try:
+            # this ensures it's a valid datetime
+            dt = datetime.fromisoformat(date_str)
+        except ValueError:
+            # fallback to NOW()
+            dt = datetime.now()
+
+        c.execute(insert_sql, (
+            msg_id,
+            content,
+            dt.isoformat(sep=' '),
+            role,
+            access_key,
+            name,
+            email,
+            is_finished
+        ))
+
+    conn.commit()
+    conn.close()
+
+    
+def delete_all_except_finished(access_key):
+    with sqlite3.connect(DATABASE) as conn:
+        cursor = conn.cursor()
+
+        # Step 1: Get finished interviews
+        cursor.execute(
+            """
+            SELECT DISTINCT name, email
+            FROM messages 
+            WHERE access_key = ? AND is_finished = 1
+            """,
+            (access_key,)
+        )
+        finished_interview = cursor.fetchall()  # list of (name, email)
+
+        # If there are no finished interviews, delete all for this access_key
+        if not finished_interview:
+            cursor.execute(
+                "DELETE FROM messages WHERE access_key = ?",
+                (access_key,)
+            )
+            print(f"Deleted all messages for access_key={access_key} (no finished interviews).")
+            return
+
+        # Step 2: Build WHERE clause to keep only those in finished_interview
+        placeholders = ",".join(["(?, ?)"] * len(finished_interview))
+        params = [access_key]
+        for name, email in finished_interview:
+            params.extend([name, email])
+
+        query = f"""
+        DELETE FROM messages
+        WHERE access_key = ?
+        AND (name, email) NOT IN ({placeholders})
+        """
+        cursor.execute(query, params)
+        print(f"Deleted all unfinished/intermediate messages for access_key={access_key}, except finished ones.")
 
     
 def delete_old_files():
