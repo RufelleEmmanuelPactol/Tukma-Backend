@@ -49,8 +49,6 @@ def init_db():
             # Commit is generally good practice after DDL (Data Definition Language) like CREATE TABLE
             conn.commit()
 
-            delete_all_except_finished("f1m-zj7q")
-
     except sqlite3.Error as e:
         print(f"Database error during init_db: {e}")
         # Re-raise the exception or handle it as appropriate for your app
