@@ -15,6 +15,11 @@ client = OpenAI(
 
 init_db()
 
+ALLOWED_EXTENSIONS = {'pdf'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 @app.route("/start_interview", methods=["POST"])
 def start_interview():
     data = request.get_json()
@@ -116,8 +121,8 @@ def is_finished(access_key, name, email):
     
 @app.route("/debug", methods=["GET"])
 def debug_route():
-    result = debug()
-    return jsonify({"result": result})
+    messages, resume = debug()
+    return jsonify({"messages": messages, "resume": resume})
 
 
 @app.route("/generate_audio", methods=["POST"])
@@ -151,16 +156,59 @@ def generate_audio():
         print(f"Error calling OpenAI or processing reply: {e}") # Log error
         return jsonify({"error": "Failed to get response from AI"}), 500
 
-
-@app.route("/delete_history/<access_key>/<email>/<secret_key>")
-def route_delete_history(access_key, email, secret_key):
-    status, result, rows = delete_history(access_key, email, secret_key)
-    return jsonify({"status": status, "result": result, "rows_deleted": rows})
-
         
 @app.route("/audio/<filename>")
 def serve_audio(filename):
     return send_from_directory(AUDIO_DIR, filename)
+
+
+@app.route("/delete_history/<access_key>/<email>/<secret_key>")
+def route_delete_history(access_key, email, secret_key):
+    success, result, rows = delete_history(access_key, email, secret_key)
+    return jsonify({"success": success, "result": result, "rows_deleted": rows}), 200 if success else 400
+        
+
+@app.route("/resume/upload", methods=["POST"])
+def route_upload():
+    access_key = request.form.get("access_key")
+    email = request.form.get("email")
+
+    if not access_key or not email:
+        return jsonify({'error': 'access_key and email must not be empty.'}), 400
+
+    if "file" not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+
+    if not (file and allowed_file(file.filename)):
+        return jsonify({"error": "Invalid file type. Only PDF files are allowed"}), 400
+
+    success = save_pdf(access_key, email, file)
+
+    if not success:
+        return jsonify({"error": "Resume content already exists"}), 400
+        
+    return jsonify({"result": "Resume content successfully saved"}), 200
+
+    
+@app.route("/resume/<access_key>/<email>")
+def route_get_resume(access_key, email):
+    content = get_resume(access_key, email)
+
+    if content is False:
+        return jsonify({"error": "No resume content found"}), 400
+    
+    return jsonify({"content": content}), 200
+
+
+@app.route("/delete_resume/<access_key>/<email>/<secret_key>")
+def route_delete_resume(access_key, email, secret_key):
+    message, code = delete_resume(access_key, email, secret_key)
+    return jsonify({"result": message}), code
         
 
 if __name__ == "__main__":

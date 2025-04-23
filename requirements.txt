@@ -4,3 +4,4 @@ python-dotenv
 gunicorn
 pathlib
 ffmpeg
+pymupdf
