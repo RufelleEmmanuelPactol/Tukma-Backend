@@ -291,6 +291,33 @@ def load_db():
     conn.close()
 
     
+def delete_history(access_key, email, secret_key):
+    if secret_key != os.environ.get("SECRET_KEY"):
+        return False, "Invalid secret_key", 0
+
+    conn = sqlite3.connect(LOCAL_DB)
+    c = conn.cursor()   
+
+    c.execute(
+        """
+        DELETE FROM messages
+        WHERE access_key = ? AND email = ?
+        """,
+        (access_key, email)
+    )
+    result_msg = ""
+
+    if c.rowcount > 0:
+        result_msg = "Deleted chat history of " + email + " in access_key: " + access_key
+    else:
+        result_msg = "Incorrect email/access_key or no record"
+
+    conn.commit()
+    conn.close()
+
+    return True, result_msg, c.rowcount
+
+    
 def delete_all_except_finished(access_key):
     with sqlite3.connect(DATABASE) as conn:
         cursor = conn.cursor()
