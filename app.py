@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 from datetime import datetime
 import os
-from functions import check_record, init_db, insert_msg, get_messages, get_history, get_applicants, done_interviews, check_interview, debug, initial_msg, AUDIO_DIR, delete_old_files
+from functions import *
 
 load_dotenv()
 
@@ -150,6 +150,12 @@ def generate_audio():
         # Handle potential API errors
         print(f"Error calling OpenAI or processing reply: {e}") # Log error
         return jsonify({"error": "Failed to get response from AI"}), 500
+
+
+@app.route("/delete_history/<access_key>/<email>/<secret_key>")
+def route_delete_history(access_key, email, secret_key):
+    status, result, rows = delete_history(access_key, email, secret_key)
+    return jsonify({"status": status, "result": result, "rows_deleted": rows})
 
         
 @app.route("/audio/<filename>")
