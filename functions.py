@@ -5,6 +5,7 @@ import sqlite3
 import json
 import os
 import time
+import pymupdf
 
 PROD_DB = "/app/tukma/messages.db"
 LOCAL_DB = "./app/tukma/messages.db"
@@ -43,6 +44,19 @@ def init_db():
                     name TEXT NOT NULL,
                     email TEXT NOT NULL,
                     is_finished INTEGER NOT NULL
+                )
+                """
+            )
+            # Commit is generally good practice after DDL (Data Definition Language) like CREATE TABLE
+            conn.commit()
+
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS resume (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    content TEXT NOT NULL,
+                    access_key TEXT NOT NULL,
+                    email TEXT NOT NULL
                 )
                 """
             )
@@ -236,9 +250,11 @@ def debug():
     with sqlite3.connect(DATABASE) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM messages")
-        results = cursor.fetchall()  # Fetch all results
+        messages = cursor.fetchall()  # Fetch all results
+        cursor.execute("SELECT * FROM resume")
+        resume = cursor.fetchall()
         
-    return results  # Returns a list of all records in the messages table
+    return messages, resume
 
     
 def load_db():
@@ -366,3 +382,108 @@ def delete_old_files():
                 print(f"[✓] Deleted {file}")
             except Exception as e:
                 print(f"[!] Error deleting {file}: {e}")
+                
+                
+def save_pdf(access_key, email, file):
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+
+    try:
+        # Check if the record already exists
+        c.execute(
+            """
+            SELECT email, access_key, content
+            FROM resume
+            WHERE email = ? AND access_key = ?
+            """,
+            (email, access_key),
+        )
+        
+        if c.fetchone() is not None:
+            return False
+
+        file_data = file.read()
+        file.seek(0)
+        doc = pymupdf.open(stream=file_data)
+        content = ""
+        for page in doc:
+            text = page.get_text().encode("ascii", errors="ignore").decode("ascii")
+            content += text
+
+        print(content)
+
+        # Insert the new record
+        c.execute(
+            """
+            INSERT INTO resume (access_key, email, content)
+            VALUES (?, ?, ?)
+            """,
+            (access_key, email, content),
+        )
+        conn.commit()
+
+        if c.rowcount != 1:
+            return False
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return False
+    finally:
+        conn.close()
+
+    return True
+
+    
+def get_resume(access_key, email):
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+
+    try:
+        # Check if the record already exists
+        c.execute(
+            """
+            SELECT content
+            FROM resume
+            WHERE email = ? AND access_key = ?
+            """,
+            (email, access_key),
+        )
+        content = c.fetchone()
+        
+        if content is None:
+            return False
+
+        return content[0]
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return False
+    finally:
+        conn.close()
+
+        
+def delete_resume(access_key, email, secret_key):
+    if secret_key != os.environ.get("SECRET_KEY"):
+        return "Invalid secret key", 400
+
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()   
+
+    c.execute(
+        """
+        DELETE FROM resume
+        WHERE access_key = ? AND email = ?
+        """,
+        (access_key, email)
+    )
+    result_msg = ""
+
+    if c.rowcount > 0:
+        result_msg = "Resume of data" + email + " has been deleted"
+    else:
+        result_msg = "Incorrect email/access_key or no record"
+
+    conn.commit()
+    conn.close()
+
+    return result_msg, 200
