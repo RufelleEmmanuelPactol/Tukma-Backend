@@ -295,7 +295,7 @@ def delete_history(access_key, email, secret_key):
     if secret_key != os.environ.get("SECRET_KEY"):
         return False, "Invalid secret_key", 0
 
-    conn = sqlite3.connect(LOCAL_DB)
+    conn = sqlite3.connect(DATABASE)
     c = conn.cursor()   
 
     c.execute(
