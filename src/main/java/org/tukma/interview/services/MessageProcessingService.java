@@ -618,16 +618,20 @@ public class MessageProcessingService {
         // Format the messages for the grading model
         StringBuilder promptBuilder = new StringBuilder();
         promptBuilder.append(
-                " You are an essay grader assistant for technical coding in a technical interview, give the rating based on technical accuracy and communication efficiency. Make sure that you do not grade based off communication skills but rather through technical acuity. AGAIN, technical acuity only.");
+                " You are an essay grader assistant for technical coding in a technical interview for JUNIOR SOFTWARE ENGINEERS. Be LENIENT in your grading and focus on fundamental understanding rather than perfect implementation. Remember these are entry-level candidates with limited professional experience. Give the rating based on technical accuracy and communication efficiency. Make sure that you do not grade based off communication skills but rather through technical acuity. AGAIN, technical acuity only.");
         promptBuilder.append(
                 "In here, you are required to grade the answer following a specific schema, with a score from 0 to 100, where 0 is the worst and 100 is perfect. The transcript that you are given is based on a voice-to-voice conversation which means that there is a lot of noise the voice-to-text model has incurred. If there is anything weird with the language, please infer what they meant based on what the words sound like. This is very integral in grading. This is a technical limitation.");
         promptBuilder.append(
-                "Make full use of the 0-100 range. Grades should not be afraid to use any number in this range, including floats and numbers NOT divisible by 5 for the sake of granularity");
-        promptBuilder.append("Please grade the following computer science/technical question and answer pairs. ");
+                "Make full use of the 0-100 range. Grades should not be afraid to use any number in this range, including floats and numbers NOT divisible by 5 for the sake of granularity. VERY IMPORTANT: For junior engineers, be EXTREMELY GENEROUS with scoring - if you would normally give a score of 70, increase it to 85. If you would normally give a score of 60, increase it to 75. Give full credit for fundamental understanding even if implementation has issues. The goal is to encourage promising candidates, not to filter harshly.");
+        promptBuilder.append("Please grade the following computer science/technical question and answer pairs with LENIENCY appropriate for JUNIOR SOFTWARE ENGINEERS. ");
         promptBuilder.append("IMPORTANT: Do not judge or grade the answers based on grammatical correctness. ");
-        promptBuilder.append("Focus only on technical accuracy, concept understanding, and solution correctness. ");
+        promptBuilder.append("Focus on basic technical understanding, core concepts, and general solution approach rather than expecting perfectly optimized or production-ready solutions. ");
         promptBuilder.append(
                 "Return results in this JSON format: {\"graded_responses\": [{\"question\": \"...\", \"answer\": \"...\", \"score\": 0-100, \"feedback\": \"...\", \"errors\": [\"error1\", \"error2\"]}]}\n\n");
+        promptBuilder.append(
+                "For the feedback section, be constructive and encouraging. Acknowledge what they got right first, then suggest improvements in a positive, mentoring tone. Remember this is for JUNIOR SOFTWARE ENGINEERS who are still learning. Focus on growth potential rather than pointing out every small mistake.");
+        promptBuilder.append(
+                "For the errors field, ONLY include significant conceptual misunderstandings or critical issues that would prevent code from working. DO NOT include minor syntax errors, style issues, or optimization opportunities. Keep the list of errors SHORT (maximum 2-3 items) and focus on fundamental issues that would be important for a junior engineer to understand.");
 
         // Add the technical message pairs
         promptBuilder.append("Technical questions and answers to grade:\n\n");
