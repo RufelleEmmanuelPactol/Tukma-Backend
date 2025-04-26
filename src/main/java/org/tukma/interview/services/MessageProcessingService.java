@@ -480,6 +480,7 @@ public class MessageProcessingService {
         promptBuilder.append(
                 "Ensure that the overall_score is explicitly on a scale of 1-10, where 1 is poor and 10 is excellent. ");
         promptBuilder.append("IMPORTANT: Do not judge or evaluate the responses based on grammatical correctness. ");
+        promptBuilder.append("IMPORTANT: Please be lenient when evaluating the communication skills of the respondent, as they are a non-native English speaker. Their delivery may differ from native speakers, so consider their effort and intent in conveying their thoughts.");
         promptBuilder.append(
                 "Focus on the clarity of ideas, relevance of answers, and effective communication of concepts regardless of grammar. ");
         promptBuilder.append("The metrics are: \n");
