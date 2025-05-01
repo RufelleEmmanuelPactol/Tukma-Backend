@@ -105,8 +105,7 @@ Retrieves all messages from a specific interview session.
     ```json
     {
       "status": "success",
-      "acces_key": "string",  // Note: typo in API response ("acces_key" instead of "access_key")
-      "message_count": 0,     // Note: This always returns 0 in current implementation
+      "access_key": "string",
       "messages": [
         {
           "id": 1,
