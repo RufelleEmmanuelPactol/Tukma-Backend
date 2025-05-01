@@ -210,11 +210,6 @@ gunicorn app:app
 - All interview messages are stored in a SQLite database
 - The system handles duplicate interview checks to prevent creating multiple interviews for the same user
 
-## Known Issues and Limitations
-
-1. The `message_count` field in the `/get_messages` endpoint response always returns 0
-2. There's a typo in the response where "access_key" is spelled as "acces_key"
-
 ## Security Considerations
 
 - This API does not implement authentication for API calls
