@@ -61,7 +61,7 @@ def start_interview():
 @app.route("/get_messages/<access_key>/<name>/<email>", methods=["GET"])
 def messages(access_key, name, email):
     access_key, messages = get_messages(access_key, name, email)
-    return jsonify({"status": "success", "acces_key": access_key, "message_count": 0, "messages": messages})
+    return jsonify({"status": "success", "access_key": access_key, "messages": messages})
 
 
 @app.route("/get_applicants/<access_key>", methods=["GET"])
